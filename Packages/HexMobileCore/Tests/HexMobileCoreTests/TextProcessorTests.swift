@@ -270,3 +270,35 @@ struct TextProcessorTests {
         #expect(result.text == "Synced e Nuovo Termine")
     }
 }
+
+@Suite("Personal context corrections")
+struct ContextualCorrectionTests {
+    let rule = ContextualCorrection(heard: "零零二", replacement: "Linear", following: "上", context: "任务单")
+
+    @Test func correctsChineseWithoutSpaces() {
+        let p = TextProcessor(vocabulary: [], contextualCorrections: [rule])
+        #expect(p.process("我们看一下我们零零二上的任务单还有哪些？").text == "我们看一下我们Linear上的任务单还有哪些？")
+    }
+
+    @Test func correctsObservedMixedLanguageVariantsOnlyWithContext() {
+        let rules = ["Lin2", "Lin二", "002"].map {
+            ContextualCorrection(heard: $0, replacement: "Linear", following: "上", context: "任务单")
+        }
+        let p = TextProcessor(vocabulary: [], contextualCorrections: rules)
+        #expect(p.process("我们打开我们Lin2上的任务单。").text == "我们打开我们Linear上的任务单。")
+        #expect(p.process("我们看一下我们Lin二上的任务单还有哪一些。").text == "我们看一下我们Linear上的任务单还有哪一些。")
+        #expect(p.process("我们看一下我们 002上面的任务单。").text == "我们看一下我们 Linear上面的任务单。")
+        #expect(p.process("编号002。").text == "编号002。")
+        #expect(p.process("1002上的任务单。").text == "1002上的任务单。")
+        #expect(p.process("Lin2上的数字").text == "Lin2上的数字")
+        #expect(p.process("任务单 Lin二").text == "任务单 Lin二")
+    }
+
+    @Test func leavesUnrelatedNumbersAndAliasesAlone() {
+        let p = TextProcessor(vocabulary: [VocabularyEntry(term: "OpenCode")], contextualCorrections: [rule])
+        #expect(p.process("数字是零零二").text == "数字是零零二")
+        #expect(p.process("零零二上的编号").text == "零零二上的编号")
+        #expect(p.process("任务单编号零零二").text == "任务单编号零零二")
+        #expect(p.process("用OpenCL进行计算").text == "用OpenCL进行计算")
+    }
+}

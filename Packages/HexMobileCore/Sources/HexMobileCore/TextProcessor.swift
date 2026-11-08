@@ -269,13 +269,15 @@ public struct TextProcessor: Sendable {
     public let mode: ProcessingMode
     private let vocabularyRewriter: PhraseRewriter
     private let replacementRewriter: PhraseRewriter
+    private let contextualCorrections: [ContextualCorrection]
 
     /// Creates a processor.
     /// - Parameters:
     ///   - vocabulary: Hex vocabulary (step 1).
     ///   - mode: the active mode (steps 2–3); ``ProcessingMode/passthrough`` applies none.
-    public init(vocabulary: [VocabularyEntry], mode: ProcessingMode = .passthrough) {
+    public init(vocabulary: [VocabularyEntry], mode: ProcessingMode = .passthrough, contextualCorrections: [ContextualCorrection] = []) {
         self.mode = mode
+        self.contextualCorrections = contextualCorrections
         vocabularyRewriter = PhraseRewriter(rules: vocabulary.flatMap { entry in
             entry.soundsLike.map { PhraseRewriter.Rule(pattern: $0, output: entry.term) }
         })
@@ -294,17 +296,20 @@ public struct TextProcessor: Sendable {
     public init(
         bundle: SyncBundle,
         modeOverride: String? = nil,
-        pendingVocabulary: [PendingVocabularyEntry] = []
+        pendingVocabulary: [PendingVocabularyEntry] = [],
+        contextualCorrections: [ContextualCorrection] = []
     ) {
         self.init(
             vocabulary: bundle.vocabulary + pendingVocabulary.map(\.vocabularyEntry),
-            mode: bundle.activeMode(overrideName: modeOverride)
+            mode: bundle.activeMode(overrideName: modeOverride),
+            contextualCorrections: contextualCorrections
         )
     }
 
     /// Runs the pipeline on `text`. Empty input returns an empty result.
     public func process(_ text: String) -> ProcessingResult {
-        let vocabularyOutcome = vocabularyRewriter.rewrite(text)
+        let corrected = contextualCorrections.reduce(text) { $1.apply(to: $0) }
+        let vocabularyOutcome = vocabularyRewriter.rewrite(corrected)
         let replacementOutcome = replacementRewriter.rewrite(vocabularyOutcome.text)
         var current = replacementOutcome.text
         var applied: [String] = []

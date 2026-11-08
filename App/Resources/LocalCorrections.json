@@ -1,0 +1,30 @@
+[
+  {
+    "heard": "零零二",
+    "replacement": "Linear",
+    "following": "上",
+    "context": "任务单",
+    "maxContextDistance": 20
+  },
+  {
+    "heard": "Lin2",
+    "replacement": "Linear",
+    "following": "上",
+    "context": "任务单",
+    "maxContextDistance": 20
+  },
+  {
+    "heard": "Lin二",
+    "replacement": "Linear",
+    "following": "上",
+    "context": "任务单",
+    "maxContextDistance": 20
+  },
+  {
+    "heard": "002",
+    "replacement": "Linear",
+    "following": "上",
+    "context": "任务单",
+    "maxContextDistance": 20
+  }
+]

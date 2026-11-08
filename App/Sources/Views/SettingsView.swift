@@ -284,7 +284,10 @@ struct SettingsView: View {
                 }
             }
             .disabled(sync.modeNames.isEmpty)
-            if processor.mode.replacements.isEmpty && processor.mode.transformations.isEmpty {
+            if sync.localCorrectionCount > 0 {
+                LabeledContent("Personal context corrections", value: "\(sync.localCorrectionCount)")
+            }
+            if processor.mode.replacements.isEmpty && processor.mode.transformations.isEmpty && sync.localCorrectionCount == 0 {
                 Text("No steps yet. Hex pastes your words as it heard them.")
                     .font(.subheadline)
                     .foregroundStyle(HexPalette.secondary)

@@ -60,12 +60,21 @@ final class SyncManager {
     /// Names of the synced modes the user can pick as an override.
     var modeNames: [String] { bundle?.modes.map(\.name) ?? [] }
 
+    /// Explicitly curated corrections bundled for this personal installation.
+    private static let localCorrections: [ContextualCorrection] = {
+        guard let url = Bundle.main.url(forResource: "LocalCorrections", withExtension: "json"),
+              let data = try? Data(contentsOf: url) else { return [] }
+        return (try? JSONDecoder().decode([ContextualCorrection].self, from: data)) ?? []
+    }()
+
+    var localCorrectionCount: Int { Self.localCorrections.count }
+
     /// Builds the text processor for the current bundle, override and pending terms.
     func textProcessor(modeOverride: String?) -> TextProcessor {
         if let bundle {
-            return TextProcessor(bundle: bundle, modeOverride: modeOverride, pendingVocabulary: pending.entries)
+            return TextProcessor(bundle: bundle, modeOverride: modeOverride, pendingVocabulary: pending.entries, contextualCorrections: Self.localCorrections)
         }
-        return TextProcessor(vocabulary: pending.entries.map(\.vocabularyEntry))
+        return TextProcessor(vocabulary: pending.entries.map(\.vocabularyEntry), contextualCorrections: Self.localCorrections)
     }
 
     /// Recognizer bias terms.
