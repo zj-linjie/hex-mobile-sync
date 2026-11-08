@@ -34,6 +34,9 @@ settings:
     CODE_SIGN_STYLE: Automatic
 
 packages:
+  LibrimeKit:
+    url: https://github.com/zhanggenlove/LibrimeKit.git
+    exactVersion: 0.1.0
   HexMobileCore:
     path: Packages/HexMobileCore
   # How the app asks WhisperKit for a text (decoding options, the cut of a long
@@ -112,11 +115,16 @@ targets:
     sources:
       - path: Keyboard/Sources
       - path: Keyboard/Resources
+        excludes:
+          - RimeData
+      - path: Keyboard/Resources/RimeData
+        type: folder
       - path: Design
       - path: Keyboard/Info.plist
         buildPhase: none
     dependencies:
       - package: HexMobileCore
+      - package: LibrimeKit
       # Linked only so Xcode's App Intents metadata step runs cleanly for
       # this target (it otherwise warns that the framework is missing).
       - sdk: AppIntents.framework

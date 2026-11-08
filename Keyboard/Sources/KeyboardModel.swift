@@ -113,9 +113,85 @@ final class KeyboardModel {
 
     // MARK: Typing state
 
-    enum Layer { case letters, numbers, symbols }
+    enum Layer { case letters, numbers, symbols, chinese }
     enum ShiftState { case off, once, locked }
     var layer: Layer = .letters
+    var chineseInput = ""
+    var chineseCandidates: [String] = []
+    var chineseError: String?
+    var chineseBusy = false
+    /// Zero-based page number, its size, and the derived total page count.
+    var chinesePageNo = 0
+    var chinesePageCount = 1
+    @ObservationIgnored var chinesePageSize = 5
+    @ObservationIgnored var chineseIsLastPage = true
+    @ObservationIgnored private var chinesePending = 0
+    @ObservationIgnored private let chineseEngine = NineKeyEngine.shared
+    @ObservationIgnored private let chineseOwner = UUID()
+    @ObservationIgnored private var chineseTask: Task<Void, Never>?
+
+    /// Serialized engine work. `postCommit` runs after the snapshot is applied
+    /// and the committed text inserted, still inside the same task, so an
+    /// insertion ordered after a commit (a punctuation tap) cannot overtake it.
+    private func enqueueChinese(_ work: @escaping @Sendable (NineKeyEngine) async -> NineKeyEngine.Snapshot, postCommit: @escaping @MainActor () -> Void = {}) {
+        let previous = chineseTask
+        chinesePending += 1
+        chineseBusy = true
+        chineseTask = Task { @MainActor [weak self, chineseEngine] in
+            await previous?.value
+            guard let self, !self.isShutDown, !Task.isCancelled else { return }
+            let result = await work(chineseEngine)
+            guard !self.isShutDown, !Task.isCancelled else { return }
+            self.chineseInput = result.input
+            self.chineseCandidates = result.candidates
+            self.chineseError = result.error
+            self.chinesePageNo = result.pageNo
+            self.chinesePageSize = result.pageSize
+            self.chineseIsLastPage = result.isLastPage
+            // The total page count is only known at the last page; before
+            // that, one more page is always reachable.
+            self.chinesePageCount = result.isLastPage ? result.pageNo + 1 : result.pageNo + 2
+            if !result.committed.isEmpty { self.actions.insertText(result.committed) }
+            postCommit()
+            self.chinesePending -= 1
+            self.chineseBusy = self.chinesePending > 0
+        }
+    }
+
+    func chineseKey(_ digit: String) { let owner = chineseOwner; enqueueChinese { await $0.key(digit, owner: owner) } }
+    func selectChinese(_ index: Int) {
+        guard !chineseBusy else { return }
+        let owner = chineseOwner
+        enqueueChinese { await $0.select(index, owner: owner) }
+    }
+    func chineseBackspace() { let owner = chineseOwner; enqueueChinese { await $0.backspace(owner: owner) } }
+
+    /// 重输: clears the composition, keeping the document untouched.
+    func retypeTapped() {
+        guard !chineseBusy, !chineseInput.isEmpty else { return }
+        let owner = chineseOwner
+        enqueueChinese { await $0.retype(owner: owner) }
+    }
+
+    /// Candidate paging; only meaningful while a composition is open.
+    func pageTapped(backward: Bool) {
+        guard !chineseBusy, !chineseInput.isEmpty else { return }
+        let owner = chineseOwner
+        enqueueChinese { await $0.page(backward: backward, owner: owner) }
+    }
+
+    /// A quick punctuation key (，。？): straight into the text when idle;
+    /// while composing, the first candidate commits before it, so the
+    /// punctuation lands after the words, as on the system keyboard.
+    func punctuationTapped(_ punctuation: String) {
+        guard !chineseBusy else { return }
+        guard !chineseInput.isEmpty else { actions.insertText(punctuation); return }
+        let owner = chineseOwner
+        enqueueChinese({ await $0.select(0, owner: owner) }, postCommit: { [weak self] in
+            guard let self, !self.isShutDown else { return }
+            self.actions.insertText(punctuation)
+        })
+    }
     var shift: ShiftState = .once
     @ObservationIgnored private var lastShiftTap = Date.distantPast
     @ObservationIgnored var documentContextBeforeInput: () -> String? = { nil }
@@ -247,6 +323,7 @@ final class KeyboardModel {
     /// released; it only stops the work sooner.
     func shutdown() {
         isShutDown = true
+        chineseTask?.cancel()
         stopWork()
         actions = KeyboardActions()
         documentContextBeforeInput = { nil }
@@ -345,6 +422,7 @@ final class KeyboardModel {
     // MARK: - Keys
 
     func micTapped() {
+        guard state == .recording || (chineseInput.isEmpty && !chineseBusy) else { return }
         KeyboardDiagnostics.record("keyboard mic tap state=\(state)")
         switch state {
         case .idle, .recording:
@@ -407,6 +485,8 @@ final class KeyboardModel {
     }
 
     func spaceTapped() {
+        if layer == .chinese && chineseBusy { return }
+        if layer == .chinese && !chineseInput.isEmpty { selectChinese(0); return }
         // Double space: ". " like the system keyboard.
         if let before = documentContextBeforeInput(), before.hasSuffix(" "),
            let last = before.dropLast().last, last.isLetter || last.isNumber {
@@ -416,11 +496,16 @@ final class KeyboardModel {
             return
         }
         actions.insertText(" ")
-        if layer != .letters { layer = .letters }
+        // The Chinese layer stays put: a space between汉字 must not kick the
+        // user back to the letters layer. Numbers and symbols return to
+        // letters, like the system keyboard.
+        if layer != .letters && layer != .chinese { layer = .letters }
         autoCapitalize()
     }
 
     func returnTapped() {
+        if layer == .chinese && chineseBusy { return }
+        if layer == .chinese && !chineseInput.isEmpty { selectChinese(0); return }
         actions.insertText("\n")
         shift = .once
     }
@@ -442,7 +527,10 @@ final class KeyboardModel {
         lastShiftTap = now
     }
 
-    func layerTapped(_ target: Layer) { layer = target }
+    func layerTapped(_ target: Layer) {
+        guard chineseInput.isEmpty && !chineseBusy else { return }
+        layer = target
+    }
 
     /// Capitalizes after sentence ends, like the system keyboard.
     func autoCapitalize() {
@@ -460,6 +548,7 @@ final class KeyboardModel {
 
     /// Mic key held: start recording; releasing stops it.
     func micHoldBegan() {
+        guard chineseInput.isEmpty && !chineseBusy else { return }
         guard state == .idle else { return }
         isHolding = true
         sendToggle()
@@ -471,18 +560,21 @@ final class KeyboardModel {
         if state == .recording || state == .idle { stopRequestedAt = Date(); DarwinNotificationCenter.shared.post(.toggle) }
     }
 
-    func deleteTapped() { actions.deleteBackward() }
+    func deleteTapped() {
+        if layer == .chinese && chineseBusy { return }
+        if layer == .chinese && !chineseInput.isEmpty { chineseBackspace() } else { actions.deleteBackward() }
+    }
 
     /// Hold to delete repeatedly, accelerating after a short delay.
     func startDeleting() {
         stopDeleting()
-        actions.deleteBackward()
+        deleteTapped()
         deleteTask = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(450))
             var interval = 110
             var count = 0
             while !Task.isCancelled {
-                self?.actions.deleteBackward()
+                self?.deleteTapped()
                 count += 1
                 if count == 12 { interval = 50 }
                 try? await Task.sleep(for: .milliseconds(interval))

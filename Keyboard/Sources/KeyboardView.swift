@@ -33,35 +33,26 @@ struct KeyboardView<Globe: View>: View {
                 }
             }
             .frame(height: 52)
-            ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
-                HStack(spacing: 5) {
-                    if index == 2 { leadingThirdRowKey }
-                    ForEach(row, id: \.self) { key in
-                        LetterKey(key: key, model: model)
+            if model.layer == .chinese {
+                ChineseNineKeyBody(model: model, globeKey: globeKey)
+            } else {
+                ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
+                    HStack(spacing: 5) {
+                        if index == 2 { leadingThirdRowKey }
+                        ForEach(row, id: \.self) { key in
+                            LetterKey(key: key, model: model)
+                        }
+                        if index == 2 {
+                            DeleteKey(model: model)
+                                .frame(width: 46)
+                        }
                     }
-                    if index == 2 {
-                        DeleteKey(model: model)
-                            .frame(width: 46)
-                    }
+                    .padding(.horizontal, index == 1 && model.layer == .letters ? 16 : 0)
+                    .frame(height: 46)
                 }
-                .padding(.horizontal, index == 1 && model.layer == .letters ? 16 : 0)
-                .frame(height: 46)
+                sharedBottomRow
+                    .frame(height: 46)
             }
-            HStack(spacing: 5) {
-                LayerKey(title: model.layer == .letters ? "123" : "ABC") {
-                    model.layerTapped(model.layer == .letters ? .numbers : .letters)
-                }
-                .frame(width: 50)
-                if model.needsGlobeKey {
-                    globeKey()
-                        .frame(width: 44)
-                        .background(KeyBackground(isAccent: false))
-                }
-                SpaceKey(model: model)
-                ReturnKey(model: model)
-                    .frame(width: 88)
-            }
-            .frame(height: 46)
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 6)
@@ -84,6 +75,28 @@ struct KeyboardView<Globe: View>: View {
             [["[", "]", "{", "}", "#", "%", "^", "*", "+", "="],
              ["_", "\\", "|", "~", "<", ">", "$", "£", "•"],
              [".", ",", "?", "!", "'"]]
+        case .chinese: []
+        }
+    }
+
+    /// The letters/numbers/symbols bottom row: layer switch, 中/英, globe,
+    /// space, return. The Chinese layer draws its own (ChineseNineKeyBody).
+    private var sharedBottomRow: some View {
+        HStack(spacing: 5) {
+            LayerKey(title: model.layer == .numbers || model.layer == .symbols ? "ABC" : "123") {
+                model.layerTapped(model.layer == .numbers || model.layer == .symbols ? .letters : .numbers)
+            }
+            .frame(width: 50)
+            ModeToggleKey(model: model)
+                .frame(width: 45)
+            if model.needsGlobeKey {
+                globeKey()
+                    .frame(width: 44)
+                    .background(KeyBackground(isAccent: false))
+            }
+            SpaceKey(model: model)
+            ReturnKey(model: model)
+                .frame(width: 88)
         }
     }
 
@@ -95,6 +108,7 @@ struct KeyboardView<Globe: View>: View {
             LayerKey(title: "#+=") { model.layerTapped(.symbols) }.frame(width: 46)
         case .symbols:
             LayerKey(title: "123") { model.layerTapped(.numbers) }.frame(width: 46)
+        case .chinese: EmptyView()
         }
     }
 
@@ -468,7 +482,7 @@ private struct SpaceKey: View {
 }
 
 /// Dims and shrinks keys while pressed.
-private struct PressableStyle: ButtonStyle {
+struct PressableStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .opacity(configuration.isPressed ? 0.7 : 1)
