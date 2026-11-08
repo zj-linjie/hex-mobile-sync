@@ -69,6 +69,7 @@ struct ChineseNineKeyBody<Globe: View>: View {
                         .padding(.horizontal, 5)
                         .disabled(model.chineseBusy)
                         .frame(maxWidth: .infinity)
+                        .buttonStyle(PressableStyle())
                 }
             }
             .frame(maxWidth: .infinity)
@@ -181,6 +182,7 @@ private struct NineKeyDeleteKey: View {
                     .onChanged { _ in
                         guard !isPressed else { return }
                         isPressed = true
+                        KeyFeedback.tap()
                         model.startDeleting()
                     }
                     .onEnded { _ in

@@ -197,6 +197,7 @@ private struct LetterKey: View {
                     .onChanged { _ in
                         if !isPressed {
                             isPressed = true
+                            KeyFeedback.tap()
                             if Self.accents[key] != nil {
                                 Task {
                                     try? await Task.sleep(for: .milliseconds(420))
@@ -424,6 +425,7 @@ private struct DeleteKey: View {
                     .onChanged { _ in
                         guard !isPressed else { return }
                         isPressed = true
+                        KeyFeedback.tap()
                         model.startDeleting()
                     }
                     .onEnded { _ in
@@ -481,11 +483,16 @@ private struct SpaceKey: View {
     }
 }
 
-/// Dims and shrinks keys while pressed.
+/// Pressed keys brighten and shrink, and tap feedback (haptic + click)
+/// fires on the touch-down, as on the system keyboard.
 struct PressableStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .opacity(configuration.isPressed ? 0.7 : 1)
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .brightness(configuration.isPressed ? 0.12 : 0)
+            .animation(.easeOut(duration: 0.08), value: configuration.isPressed)
+            .onChange(of: configuration.isPressed) { _, pressed in
+                if pressed { KeyFeedback.tap() }
+            }
     }
 }
