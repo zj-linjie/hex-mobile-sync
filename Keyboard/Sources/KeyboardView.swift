@@ -483,16 +483,14 @@ private struct SpaceKey: View {
     }
 }
 
-/// Pressed keys brighten and shrink, and tap feedback (haptic + click)
-/// fires on the touch-down, as on the system keyboard.
+/// Pressed keys brighten and shrink. The haptic and click are not here:
+/// an observer on the style's pressed state did not prove reliable, so
+/// `KeyFeedback.tap()` fires from the key actions instead.
 struct PressableStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .brightness(configuration.isPressed ? 0.12 : 0)
             .animation(.easeOut(duration: 0.08), value: configuration.isPressed)
-            .onChange(of: configuration.isPressed) { _, pressed in
-                if pressed { KeyFeedback.tap() }
-            }
     }
 }

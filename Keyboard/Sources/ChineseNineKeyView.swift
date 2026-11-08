@@ -62,7 +62,10 @@ struct ChineseNineKeyBody<Globe: View>: View {
             }
             HStack(spacing: 0) {
                 ForEach(Array(model.chineseCandidates.enumerated()), id: \.offset) { index, candidate in
-                    Button(candidate) { model.selectChinese(index) }
+                    Button(candidate) {
+                        KeyFeedback.tap()
+                        model.selectChinese(index)
+                    }
                         .font(.system(size: 19))
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)

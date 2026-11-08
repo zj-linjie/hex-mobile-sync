@@ -158,7 +158,11 @@ final class KeyboardModel {
         }
     }
 
-    func chineseKey(_ digit: String) { let owner = chineseOwner; enqueueChinese { await $0.key(digit, owner: owner) } }
+    func chineseKey(_ digit: String) {
+        KeyFeedback.tap()
+        let owner = chineseOwner
+        enqueueChinese { await $0.key(digit, owner: owner) }
+    }
     func selectChinese(_ index: Int) {
         guard !chineseBusy else { return }
         let owner = chineseOwner
@@ -169,6 +173,7 @@ final class KeyboardModel {
     /// 重输: clears the composition, keeping the document untouched.
     func retypeTapped() {
         guard !chineseBusy, !chineseInput.isEmpty else { return }
+        KeyFeedback.tap()
         let owner = chineseOwner
         enqueueChinese { await $0.retype(owner: owner) }
     }
@@ -176,6 +181,7 @@ final class KeyboardModel {
     /// Candidate paging; only meaningful while a composition is open.
     func pageTapped(backward: Bool) {
         guard !chineseBusy, !chineseInput.isEmpty else { return }
+        KeyFeedback.tap()
         let owner = chineseOwner
         enqueueChinese { await $0.page(backward: backward, owner: owner) }
     }
@@ -185,6 +191,7 @@ final class KeyboardModel {
     /// punctuation lands after the words, as on the system keyboard.
     func punctuationTapped(_ punctuation: String) {
         guard !chineseBusy else { return }
+        KeyFeedback.tap()
         guard !chineseInput.isEmpty else { actions.insertText(punctuation); return }
         let owner = chineseOwner
         enqueueChinese({ await $0.select(0, owner: owner) }, postCommit: { [weak self] in
@@ -458,6 +465,7 @@ final class KeyboardModel {
     }
 
     func insertTapped() {
+        KeyFeedback.tap()
         insertLatestDictation(automatic: false)
     }
 
@@ -476,6 +484,7 @@ final class KeyboardModel {
     /// `insertLatestDictation` cannot pick up anything from this dictation.
     func cancelTapped() {
         guard state == .recording else { return }
+        KeyFeedback.tap()
         KeyboardDiagnostics.record("keyboard cancel state=\(state)")
         stopRequestedAt = nil
         changeCountAtRecording = nil
@@ -486,6 +495,7 @@ final class KeyboardModel {
 
     func spaceTapped() {
         if layer == .chinese && chineseBusy { return }
+        KeyFeedback.tap()
         if layer == .chinese && !chineseInput.isEmpty { selectChinese(0); return }
         // Double space: ". " like the system keyboard.
         if let before = documentContextBeforeInput(), before.hasSuffix(" "),
@@ -505,6 +515,7 @@ final class KeyboardModel {
 
     func returnTapped() {
         if layer == .chinese && chineseBusy { return }
+        KeyFeedback.tap()
         if layer == .chinese && !chineseInput.isEmpty { selectChinese(0); return }
         actions.insertText("\n")
         shift = .once
@@ -525,11 +536,13 @@ final class KeyboardModel {
             shift = shift == .off ? .once : .off
         }
         lastShiftTap = now
+        KeyFeedback.tap()
     }
 
     func layerTapped(_ target: Layer) {
         guard chineseInput.isEmpty && !chineseBusy else { return }
         layer = target
+        KeyFeedback.tap()
     }
 
     /// Capitalizes after sentence ends, like the system keyboard.
