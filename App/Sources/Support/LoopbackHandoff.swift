@@ -38,6 +38,38 @@ final class LoopbackHandoff {
     /// user to open the keyboard. Follows ``pending``: cleared with it.
     private(set) var pendingText: String?
 
+    /// The most recent dictations, newest first, for the keyboard's
+    /// long-press picker (`loopbackRecentRequest`). Memory only, and served
+    /// only inside the window ``prepareRecentWindow()`` opens — the listener
+    /// must not be reachable at any random time, any local process could
+    /// connect to it.
+    private(set) var recent: [DictationPayload] = []
+    private static let recentLimit = 8
+    private var recentWindow: Task<Void, Never>?
+
+    /// Records a finished dictation for the recent list. Newest first; a
+    /// payload already in the list moves to the front; the oldest drops out.
+    func remember(_ payload: DictationPayload) {
+        recent.removeAll { $0.id == payload.id }
+        recent.insert(payload, at: 0)
+        if recent.count > Self.recentLimit {
+            recent.removeLast(recent.count - Self.recentLimit)
+        }
+    }
+
+    /// Opens the listener for a few seconds so the keyboard can pull the
+    /// recent list. The keyboard posts ``HexMobileIPC/Signal/recent`` first:
+    /// the window exists only around that explicit user action.
+    func prepareRecentWindow() {
+        startIfNeeded()
+        recentWindow?.cancel()
+        recentWindow = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(6))
+            guard !Task.isCancelled, let self else { return }
+            self.stopIfIdle()
+        }
+    }
+
     private var listener: NWListener?
     private var pending: Data? {
         didSet { if pending == nil { pendingText = nil } }
@@ -168,6 +200,13 @@ final class LoopbackHandoff {
                     })
                     return
                 }
+                if request == HexMobileIPC.loopbackRecentRequest {
+                    let reply = (try? DictationPayload.encodeArray(self.recent)) ?? Data("[]".utf8)
+                    connection.send(content: reply, isComplete: true, completion: .contentProcessed { _ in
+                        connection.cancel()
+                    })
+                    return
+                }
                 guard request == HexMobileIPC.loopbackRequest, let payload = self.pending else {
                     connection.cancel()
                     return
@@ -193,6 +232,8 @@ final class LoopbackHandoff {
         expiry = nil
         errorExpiry?.cancel()
         errorExpiry = nil
+        recentWindow?.cancel()
+        recentWindow = nil
         pending = nil
         live = nil
         level = 0

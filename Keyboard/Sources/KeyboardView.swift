@@ -33,7 +33,9 @@ struct KeyboardView<Globe: View>: View {
                 }
             }
             .frame(height: 52)
-            if model.layer == .chinese {
+            if model.showRecentPicker {
+                RecentPickerPanel(model: model)
+            } else if model.layer == .chinese {
                 ChineseNineKeyBody(model: model, globeKey: globeKey)
             } else {
                 ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
@@ -143,7 +145,6 @@ struct KeyboardView<Globe: View>: View {
         switch model.hint {
         case .startSession: "Open Hex Mobile and start a flow session, then come back."
         case .needsFullAccess: "Turn on Allow Full Access for Hex Mobile in Settings > Keyboards."
-        case .alreadyInserted: "This dictation was already inserted."
         case .nothingToInsert: "No dictation on the clipboard yet."
         case .resultReady: "A dictation is ready. Tap the insert key to add it."
         case nil: nil
@@ -299,6 +300,9 @@ private struct MicKey: View {
                 .onChanged { _ in
                     guard pressStart == nil else { return }
                     pressStart = Date()
+                    // Haptic only: the click would be cut off by the audio
+                    // session this key is about to start.
+                    KeyFeedback.tap(click: false)
                     holdTask = Task {
                         try? await Task.sleep(for: .milliseconds(320))
                         guard !Task.isCancelled else { return }
@@ -394,19 +398,128 @@ private struct CancelKey: View {
     }
 }
 
+/// The insert key: a tap inserts the latest dictation, a hold (about half a
+/// second) opens the recent-dictation picker.
 private struct InsertKey: View {
+    let model: KeyboardModel
+    @State private var isPressed = false
+    @State private var longPressFired = false
+    @State private var holdTask: Task<Void, Never>?
+    private static let holdDuration: Duration = .milliseconds(450)
+
+    var body: some View {
+        Image(systemName: "text.insert")
+            .font(.title3)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(KeyBackground(isAccent: false, isPressed: isPressed))
+            .foregroundStyle(model.hasDictationOnPasteboard ? HexPalette.foreground : HexPalette.secondary)
+            .contentShape(.rect)
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in
+                        guard !isPressed else { return }
+                        isPressed = true
+                        longPressFired = false
+                        holdTask = Task {
+                            try? await Task.sleep(for: Self.holdDuration)
+                            guard !Task.isCancelled else { return }
+                            longPressFired = true
+                            KeyFeedback.tap()
+                            model.insertLongPressed()
+                        }
+                    }
+                    .onEnded { _ in
+                        holdTask?.cancel()
+                        if !longPressFired {
+                            model.insertTapped()
+                        }
+                        isPressed = false
+                    }
+            )
+            .accessibilityElement()
+            .accessibilityLabel(Text("Insert last dictation"))
+            .accessibilityAddTraits(.isButton)
+            .accessibilityHint(Text("Hold for recent dictations"))
+            .accessibilityAction { model.insertTapped() }
+    }
+}
+
+/// The recent-dictation picker the insert key's hold opens: one row per
+/// dictation, newest first; tapping a row inserts it (repeats allowed).
+/// The rows come from the app over loopback, served only in the window this
+/// picker's opening asked for; without Full Access (or an unreachable app)
+/// the pasteboard payload is the only row.
+private struct RecentPickerPanel: View {
     let model: KeyboardModel
 
     var body: some View {
-        Button(action: model.insertTapped) {
-            Image(systemName: "text.insert")
-                .font(.title3)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(KeyBackground(isAccent: false))
-                .foregroundStyle(model.hasDictationOnPasteboard ? HexPalette.foreground : HexPalette.secondary)
+        VStack(spacing: 6) {
+            HStack(spacing: 8) {
+                Text("最近听写")
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(HexPalette.foreground)
+                Spacer()
+                Button {
+                    model.closeRecentPicker()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.callout.weight(.semibold))
+                        .frame(width: 34, height: 30)
+                        .background(KeyBackground(isAccent: false))
+                        .foregroundStyle(HexPalette.foreground)
+                }
+                .buttonStyle(PressableStyle())
+                .accessibilityLabel(Text("关闭"))
+            }
+            .frame(height: 32)
+            if model.recentLoading {
+                Spacer()
+                Text("读取中…")
+                    .font(.caption)
+                    .foregroundStyle(HexPalette.secondary)
+                Spacer()
+            } else if model.recentPayloads.isEmpty {
+                Spacer()
+                Text("暂无听写记录")
+                    .font(.caption)
+                    .foregroundStyle(HexPalette.secondary)
+                Spacer()
+            } else {
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 5) {
+                        ForEach(model.recentPayloads) { payload in
+                            Button {
+                                model.recentPicked(payload)
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Text(payload.text)
+                                        .font(.subheadline)
+                                        .lineLimit(1)
+                                        .truncationMode(.tail)
+                                        .foregroundStyle(HexPalette.foreground)
+                                    Spacer(minLength: 8)
+                                    Text(Self.time(payload.createdAt))
+                                        .font(.caption2)
+                                        .foregroundStyle(HexPalette.secondary)
+                                }
+                                .padding(.horizontal, 10)
+                                .frame(maxWidth: .infinity, minHeight: 36)
+                                .background(KeyBackground(isAccent: false))
+                            }
+                            .buttonStyle(PressableStyle())
+                            .accessibilityLabel(Text("插入：\(payload.text)"))
+                        }
+                    }
+                }
+            }
         }
-        .buttonStyle(PressableStyle())
-        .accessibilityLabel(Text("Insert last dictation"))
+    }
+
+    /// `HH:MM` of when the dictation finished, in the current calendar.
+    private static func time(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: date)
     }
 }
 

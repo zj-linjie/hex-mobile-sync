@@ -88,6 +88,15 @@ final class DictationController {
     private(set) var skippedTransformations: [String] = []
 
     /// Whether a flow session keeps the microphone ready in the background.
+    /// It must: a keyboard dictation runs while this app is in the
+    /// background, and iOS refuses to activate (or reconfigure) an audio
+    /// session there — the session is activated once, at flow session start,
+    /// and stays active until the session ends. The price is system-level:
+    /// a live recording session mutes system sounds (key clicks) and is
+    /// known to swallow haptics, so the keyboard's tap feedback is dead for
+    /// the whole session. Tried releasing the audio between dictations
+    /// (2026-11-08): the next dictation could not bring it back from the
+    /// background and dictation broke; reverted.
     private(set) var isFlowSessionActive = false
     /// Whether ``startFlowSession(requiresLiveActivity:opener:)`` is running:
     /// permissions, Live Activity and the audio attempts (about 3 s when iOS
@@ -502,6 +511,9 @@ final class DictationController {
             engine: engine.identifier
         )
         lastRecord = record
+        // The keyboard's recent-dictation picker (long press on its insert
+        // key) serves from this list, whatever route produced the text.
+        LoopbackHandoff.shared.remember(DictationPayload(record: record))
         keepClip(recording, live: live, finalPass: finalPass, cleanup: cleanup, inserted: result.text, record: record, stopAt: stopAt)
         if settings.copyToClipboard {
             DictationPasteboard.write(record, localOnly: !settings.allowUniversalClipboard)
@@ -1414,7 +1426,7 @@ final class DictationController {
 
     private func startListening() {
         signalTask = Task { [weak self] in
-            for await signal in DarwinNotificationCenter.shared.signals([.ping, .toggle, .cancel]) {
+            for await signal in DarwinNotificationCenter.shared.signals([.ping, .toggle, .cancel, .recent]) {
                 guard let self else { return }
                 await self.handle(signal)
             }
@@ -1488,6 +1500,11 @@ final class DictationController {
             // keyboard where things stand, as `finishCycle` does otherwise.
             if before == .idle || before == .processing { postCurrentFlowState() }
             Diagnostics.record("keyboard cancel done phase=\(phase) flow=\(isFlowSessionActive) pending=\(LoopbackHandoff.shared.hasPending) changeCount=\(UIPasteboard.general.changeCount)")
+        case .recent:
+            // The keyboard's insert key was held: its picker is about to pull
+            // the recent dictations. Open the listener for a few seconds —
+            // the only moment recent text is reachable on the port.
+            LoopbackHandoff.shared.prepareRecentWindow()
         default:
             break
         }

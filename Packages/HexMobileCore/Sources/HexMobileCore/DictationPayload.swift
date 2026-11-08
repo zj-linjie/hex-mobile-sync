@@ -109,6 +109,18 @@ public struct DictationPayload: Codable, Sendable, Hashable, Identifiable {
         try SyncCodec.decode(DictationPayload.self, from: data)
     }
 
+    /// Encodes an array of payloads (the recent-dictation loopback reply),
+    /// with the same JSON conventions as ``encoded()``.
+    public static func encodeArray(_ payloads: [DictationPayload]) throws -> Data {
+        try HexJSON.makeEncoder().encode(payloads)
+    }
+
+    /// Decodes an array of payloads (see ``encodeArray(_:)``).
+    /// - Throws: ``SyncCodecError``.
+    public static func decodeArray(from data: Data) throws(SyncCodecError) -> [DictationPayload] {
+        try SyncCodec.decode([DictationPayload].self, from: data)
+    }
+
     /// A pasteboard item with the plain text and the JSON payload, suitable
     /// for `UIPasteboard.general.setItems([item])`.
     public func pasteboardItem() throws -> [String: Any] {

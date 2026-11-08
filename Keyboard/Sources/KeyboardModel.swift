@@ -41,7 +41,6 @@ final class KeyboardModel {
     enum Hint: Equatable {
         case startSession
         case needsFullAccess
-        case alreadyInserted
         case nothingToInsert
         /// A dictation finished that this keyboard did not stop (Live
         /// Activity, Action Button, another keyboard): insert only on tap.
@@ -52,6 +51,10 @@ final class KeyboardModel {
         didSet {
             guard state != oldValue else { return }
             if state == .recording { startLivePolling() } else { stopLivePolling() }
+            // Under an active recording session iOS mutes system sounds; a
+            // click here would only sound chopped. Haptic-only until the
+            // dictation is over (see KeyFeedback.clicksMuted).
+            KeyFeedback.clicksMuted = state == .recording || state == .processing
         }
     }
     /// Why the app could not start or finish a dictation, shown on top of the
@@ -631,10 +634,8 @@ final class KeyboardModel {
             return
         }
         if automatic, !payload.isFresh() { return }
-        if wasInserted(payload.id) {
-            if !automatic { hint = .alreadyInserted }
-            return
-        }
+        // A manual insert may repeat; only the automatic paths dedupe.
+        if automatic, wasInserted(payload.id) { return }
         let text = payload.insertableText
         guard !text.isEmpty else { return }
         KeyboardDiagnostics.record("inserted \(text.count) chars")
@@ -643,6 +644,76 @@ final class KeyboardModel {
         // actor, so nothing can insert it a second time in between).
         markInserted(payload.id)
         hint = nil
+    }
+
+    // MARK: - Recent dictations (long press on the insert key)
+
+    /// The recent-dictation picker is open (it replaces the key area).
+    var showRecentPicker = false
+    /// The app is being asked for the recent list.
+    var recentLoading = false
+    /// The payloads the picker offers, newest first.
+    var recentPayloads: [DictationPayload] = []
+
+    /// The insert key was held: open the picker and ask the app for the
+    /// recent dictations. The keyboard first posts `recent`, so the app
+    /// opens its loopback listener for a few seconds; without an answer the
+    /// pasteboard payload (if any) is the only row offered.
+    func insertLongPressed() {
+        KeyboardDiagnostics.record("insert long press")
+        showRecentPicker = true
+        recentLoading = true
+        recentPayloads = []
+        DarwinNotificationCenter.shared.post(.recent)
+        Task { @MainActor [weak self] in
+            // A moment for the app to open its listener before we connect.
+            try? await Task.sleep(for: .milliseconds(150))
+            guard let self, !self.isShutDown else { return }
+            var payloads = await LoopbackClient.recent()
+            if payloads.isEmpty, let single = self.pasteboardPayload() { payloads = [single] }
+            guard !self.isShutDown else { return }
+            self.recentPayloads = payloads
+            self.recentLoading = false
+        }
+    }
+
+    func closeRecentPicker() {
+        showRecentPicker = false
+        recentLoading = false
+        recentPayloads = []
+    }
+
+    /// A row of the picker was tapped: insert it. Manual insertions may
+    /// repeat — only the automatic paths dedupe by id.
+    func recentPicked(_ payload: DictationPayload) {
+        closeRecentPicker()
+        insertManual(payload)
+    }
+
+    /// Inserts `payload` straight in, whatever was inserted before.
+    private func insertManual(_ payload: DictationPayload) {
+        guard !isShutDown else { return }
+        let text = payload.insertableText
+        guard !text.isEmpty else {
+            hint = .nothingToInsert
+            return
+        }
+        KeyboardDiagnostics.record("inserted recent \(text.count) chars")
+        actions.insertText(text)
+        // Still marked, so the automatic paths do not insert it again.
+        markInserted(payload.id)
+        hint = nil
+    }
+
+    /// The dictation payload on the pasteboard, if any (without reading the
+    /// plain text, so iOS shows no paste prompt for other items).
+    private func pasteboardPayload() -> DictationPayload? {
+        let pasteboard = UIPasteboard.general
+        guard pasteboard.contains(pasteboardTypes: [HexMobileIPC.pasteboardType]),
+              let data = pasteboard.data(forPasteboardType: HexMobileIPC.pasteboardType) else {
+            return nil
+        }
+        return try? DictationPayload.decode(from: data)
     }
 
     private func refreshPasteboardFlag() {
@@ -687,10 +758,8 @@ final class KeyboardModel {
             return
         }
         if automatic, !payload.isFresh(maxAge: 15) { KeyboardDiagnostics.record("insert: payload stale"); return }
-        if wasInserted(payload.id) {
-            if !automatic { hint = .alreadyInserted }
-            return
-        }
+        // A manual insert may repeat; only the automatic paths dedupe.
+        if automatic, wasInserted(payload.id) { return }
         // A fresh result inserts itself wherever the cursor is, also when the
         // dictation was stopped from the Action Button or the Live Activity:
         // that is the point of the keyboard (like Hex pasting on the Mac).

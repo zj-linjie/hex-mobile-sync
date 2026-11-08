@@ -17,6 +17,7 @@ struct IPCTests {
             "io.github.hexmobile.session.ended",
             "io.github.hexmobile.cancel",
             "io.github.hexmobile.start.failed",
+            "io.github.hexmobile.recent",
         ])
         for signal in HexMobileIPC.Signal.allCases {
             #expect(signal.name.hasPrefix(HexMobileIPC.notificationPrefix + "."))

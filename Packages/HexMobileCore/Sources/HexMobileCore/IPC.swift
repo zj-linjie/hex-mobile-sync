@@ -40,6 +40,11 @@ public enum HexMobileIPC {
     /// (UTF-8 reply, empty when none; not consumed). The keyboard sends it
     /// after ``Signal/startFailed``, which carries no text.
     public static let loopbackErrorRequest = "HEXMOBILE-ERROR 1\n"
+    /// Request line for the recent dictations: the reply is a JSON array of
+    /// ``DictationPayload`` (newest first, not consumed). The listener only
+    /// serves it inside the window a ``Signal/recent`` opens, so dictated
+    /// text is not reachable on the port at any random time.
+    public static let loopbackRecentRequest = "HEXMOBILE-RECENT 1\n"
 
     /// Uniform type identifier of the plain-text pasteboard representation.
     public static let plainTextPasteboardType = "public.utf8-plain-text"
@@ -75,6 +80,12 @@ public enum HexMobileIPC {
         /// on loopback (``HexMobileIPC/loopbackErrorRequest``); the keyboard shows
         /// it with Close and Retry.
         case startFailed = "io.github.hexmobile.start.failed"
+        /// Keyboard → app: the user held the insert key and is about to ask
+        /// for the recent dictations. The app opens its loopback listener for
+        /// a few seconds so the ``loopbackRecentRequest`` can be served; the
+        /// listener must not be up at any random time (any local process
+        /// could connect to it).
+        case recent = "io.github.hexmobile.recent"
 
         /// The Darwin notification name.
         public var name: String { rawValue }
@@ -109,7 +120,7 @@ public enum HexMobileIPC {
             case .stateIdle: self = .idle
             case .stateRecording: self = .recording
             case .stateProcessing: self = .processing
-            case .ping, .pong, .toggle, .done, .sessionEnded, .cancel, .startFailed: return nil
+            case .ping, .pong, .toggle, .done, .sessionEnded, .cancel, .startFailed, .recent: return nil
             }
         }
     }

@@ -29,6 +29,16 @@ enum LoopbackClient {
         }
         return HexMobileIPC.parseLiveLevelReply(reply)
     }
+
+    /// The recent dictations, newest first. Only served inside the window
+    /// the app opens after this keyboard posts ``HexMobileIPC/Signal/recent``
+    /// (see `KeyboardModel.insertLongPressed`); empty when unreachable.
+    static func recent(timeout: TimeInterval = 1.5) async -> [DictationPayload] {
+        guard let data = await Puller(request: HexMobileIPC.loopbackRecentRequest, timeout: timeout).run() else {
+            return []
+        }
+        return (try? DictationPayload.decodeArray(from: data)) ?? []
+    }
 }
 
 /// One request: connect, send the request line, read until the app closes.
