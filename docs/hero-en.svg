@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="100%" role="img" aria-label="Hex Mobile Sync — on-device iPhone dictation that shares its vocabulary and text rules with Hex on your Mac. On the right, the Chinese nine-key keyboard: a candidate bar over the letter grid.">
+  <defs>
+    <clipPath id="frame"><rect width="1200" height="300" rx="0"/></clipPath>
+  </defs>
+  <g clip-path="url(#frame)">
+    <title>Hex Mobile Sync — on-device iPhone dictation that shares its vocabulary and text rules with Hex on your Mac</title>
+    <rect width="1200" height="300" fill="#0A0A0A"/>
+
+    <!-- Title block -->
+    <g font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif">
+      <!-- Concentric hexagon mark -->
+      <g stroke="#8E8E8E" fill="none" stroke-width="2">
+        <polygon points="88,26 103,34.5 103,51.5 88,60 73,51.5 73,34.5"/>
+        <polygon points="88,34 96,38.5 96,47.5 88,52 80,47.5 80,38.5" stroke="#FFFFFF"/>
+      </g>
+      <text x="64" y="128" font-size="46" font-weight="700" fill="#FFFFFF">Hex Mobile Sync</text>
+      <text x="64" y="166" font-size="22" fill="#A5A5A5">On-device iPhone dictation that shares its vocabulary</text>
+      <text x="64" y="196" font-size="22" fill="#A5A5A5">and text rules with Hex on your Mac.</text>
+
+      <!-- Chips -->
+      <g font-size="14">
+        <rect x="64" y="224" width="86" height="32" rx="16" fill="#141414" stroke="#232323"/>
+        <text x="107" y="244" text-anchor="middle" fill="#C8C8C8">iOS 26+</text>
+        <rect x="160" y="224" width="196" height="32" rx="16" fill="#141414" stroke="#232323"/>
+        <text x="258" y="244" text-anchor="middle" fill="#C8C8C8">On-device · no cloud</text>
+        <rect x="64" y="264" width="150" height="32" rx="16" fill="#141414" stroke="#232323"/>
+        <text x="139" y="284" text-anchor="middle" fill="#0A84FF">Chinese 9-key</text>
+        <rect x="224" y="264" width="170" height="32" rx="16" fill="#141414" stroke="#232323"/>
+        <text x="309" y="284" text-anchor="middle" fill="#C8C8C8">Free Apple ID works</text>
+      </g>
+    </g>
+
+    <!-- Mini nine-key keyboard -->
+    <g font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif">
+      <!-- Candidate bar -->
+      <rect x="700" y="56" width="460" height="48" rx="10" fill="#141414" stroke="#232323"/>
+      <g fill="#8E8E8E">
+        <rect x="718" y="74" width="4" height="12" rx="2"/>
+        <rect x="727" y="68" width="4" height="24" rx="2"/>
+        <rect x="736" y="72" width="4" height="16" rx="2"/>
+        <rect x="745" y="66" width="4" height="28" rx="2"/>
+        <rect x="754" y="74" width="4" height="12" rx="2"/>
+      </g>
+      <text x="800" y="87" font-size="20" fill="#FFFFFF">你好</text>
+      <text x="872" y="87" font-size="20" fill="#FFFFFF">你和</text>
+      <text x="944" y="87" font-size="20" fill="#FFFFFF">拟好</text>
+      <text x="1052" y="86" font-size="14" fill="#8E8E8E">‹ 1/3 ›</text>
+
+      <!-- Row 1 -->
+      <rect x="700" y="116" width="130" height="52" rx="10" fill="#141414" stroke="#232323"/>
+      <text x="765" y="148" text-anchor="middle" font-size="15" fill="#FFFFFF">@#</text>
+      <rect x="838" y="116" width="130" height="52" rx="10" fill="#141414" stroke="#232323"/>
+      <text x="903" y="149" text-anchor="middle" font-size="18" fill="#0A84FF">ABC</text>
+      <rect x="976" y="116" width="130" height="52" rx="10" fill="#141414" stroke="#232323"/>
+      <text x="1041" y="149" text-anchor="middle" font-size="18" fill="#0A84FF">DEF</text>
+      <rect x="1114" y="116" width="46" height="52" rx="10" fill="#141414" stroke="#232323"/>
+      <text x="1137" y="149" text-anchor="middle" font-size="17" fill="#FFFFFF">⌫</text>
+
+      <!-- Row 2 -->
+      <rect x="700" y="176" width="130" height="52" rx="10" fill="#141414" stroke="#232323"/>
+      <text x="765" y="209" text-anchor="middle" font-size="18" fill="#0A84FF">GHI</text>
+      <rect x="838" y="176" width="130" height="52" rx="10" fill="#141414" stroke="#232323"/>
+      <text x="903" y="209" text-anchor="middle" font-size="18" fill="#0A84FF">JKL</text>
+      <rect x="976" y="176" width="130" height="52" rx="10" fill="#141414" stroke="#232323"/>
+      <text x="1041" y="209" text-anchor="middle" font-size="18" fill="#0A84FF">MNO</text>
+      <rect x="1114" y="176" width="46" height="52" rx="10" fill="#141414" stroke="#232323"/>
+      <text x="1137" y="208" text-anchor="middle" font-size="14" fill="#FFFFFF">重输</text>
+
+      <!-- Row 3 -->
+      <rect x="700" y="236" width="130" height="52" rx="10" fill="#141414" stroke="#232323"/>
+      <text x="765" y="269" text-anchor="middle" font-size="18" fill="#0A84FF">PQRS</text>
+      <rect x="838" y="236" width="130" height="52" rx="10" fill="#141414" stroke="#232323"/>
+      <text x="903" y="269" text-anchor="middle" font-size="18" fill="#0A84FF">TUV</text>
+      <rect x="976" y="236" width="130" height="52" rx="10" fill="#141414" stroke="#232323"/>
+      <text x="1041" y="269" text-anchor="middle" font-size="18" fill="#0A84FF">WXYZ</text>
+      <rect x="1114" y="236" width="46" height="52" rx="10" fill="#141414" stroke="#232323"/>
+      <text x="1137" y="268" text-anchor="middle" font-size="14" fill="#FFFFFF">换行</text>
+    </g>
+  </g>
+</svg>
