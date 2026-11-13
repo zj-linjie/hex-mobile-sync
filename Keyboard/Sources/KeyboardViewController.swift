@@ -61,6 +61,9 @@ final class KeyboardViewController: UIInputViewController {
         model.actions = KeyboardActions(
             insertText: { [weak self] text in self?.textDocumentProxy.insertText(text) },
             deleteBackward: { [weak self] in self?.textDocumentProxy.deleteBackward() },
+            moveCursor: { [weak self] chars in
+                self?.textDocumentProxy.adjustTextPosition(byCharacterOffset: chars)
+            },
             openHostApp: { [weak self] url in self?.openURLFromExtension(url) ?? false },
             hasFullAccess: { [weak self] in self?.hasFullAccess ?? false }
         )

@@ -1,3 +1,5 @@
+import HexMobileCore
+import QuartzCore
 import SwiftUI
 
 /// Full keyboard in Hex style: a dictation bar on top (status, voice blob
@@ -60,6 +62,10 @@ struct KeyboardView<Globe: View>: View {
         .padding(.vertical, 6)
         .frame(height: Self.preferredHeight)
         .background(HexPalette.background)
+        // The cursor trackpad dims every key: the keyboard is one surface
+        // while the space key's hold lasts, and lights up again on release.
+        .opacity(model.cursorTrackpad ? 0.15 : 1)
+        .animation(.easeOut(duration: 0.12), value: model.cursorTrackpad)
         .sensoryFeedback(.impact(weight: .light), trigger: model.state)
     }
 
@@ -96,7 +102,7 @@ struct KeyboardView<Globe: View>: View {
                     .frame(width: 44)
                     .background(KeyBackground(isAccent: false))
             }
-            SpaceKey(model: model)
+            TrackpadSpaceKey(title: "space", model: model)
             ReturnKey(model: model)
                 .frame(width: 88)
         }
@@ -581,18 +587,85 @@ private struct ReturnKey: View {
     }
 }
 
-private struct SpaceKey: View {
+/// The space key both layers share. A tap is the space action; a press
+/// held still past `hold` (with the model's leave) turns the keyboard into
+/// a cursor trackpad — dim, slide to move the cursor, release to leave it;
+/// a slide beyond the cancel slop before that ends the gesture quietly,
+/// with neither a space nor a trackpad.
+struct TrackpadSpaceKey: View {
+    let title: LocalizedStringKey
     let model: KeyboardModel
+    @State private var isPressed = false
+    @State private var holdTask: Task<Void, Never>?
+    @State private var trackpad = SpaceTrackpad()
+    /// The hold the gesture's tuning names, so the feel has one home.
+    private static let hold = Duration.seconds(SpaceTrackpad().tuning.holdSeconds)
 
     var body: some View {
-        Button(action: model.spaceTapped) {
-            Text("space")
-                .font(.callout)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(KeyBackground(isAccent: false))
-                .foregroundStyle(HexPalette.foreground)
-        }
-        .buttonStyle(PressableStyle())
+        Text(title)
+            .font(.callout.weight(.medium))
+            .minimumScaleFactor(0.7)
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(KeyBackground(isAccent: false, isPressed: isPressed))
+            .foregroundStyle(HexPalette.foreground)
+            .contentShape(.rect)
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        if !isPressed {
+                            isPressed = true
+                            trackpad = SpaceTrackpad()
+                            trackpad.began(x: value.startLocation.x, at: now())
+                            holdTask = Task { @MainActor in
+                                try? await Task.sleep(for: Self.hold)
+                                guard !Task.isCancelled else { return }
+                                // The state machine gates the engage: a
+                                // slide past the slop cancelled it already,
+                                // and a cancelled gesture never engages.
+                                guard trackpad.phase == .pressing else { return }
+                                // A refused engage (a composition is open)
+                                // leaves the gesture as a press, so the
+                                // release keeps the space action.
+                                guard model.spaceTrackpadEngaged() else { return }
+                                trackpad.holdElapsed(at: now())
+                            }
+                        } else {
+                            model.spaceTrackpadMoved(
+                                trackpad.moved(x: value.location.x, at: now())
+                            )
+                        }
+                    }
+                    .onEnded { _ in
+                        holdTask?.cancel()
+                        switch trackpad.ended() {
+                        case .space: model.spaceTapped()
+                        case .trackpadEnded: model.spaceTrackpadEnded()
+                        case .none: break
+                        }
+                        isPressed = false
+                    }
+            )
+            // A press whose key leaves the hierarchy mid-gesture (the layer
+            // switched under a second finger) gets no release event: end it
+            // here, so the hold timer cannot engage an orphaned trackpad and
+            // leave the keyboard dimmed.
+            .onDisappear {
+                holdTask?.cancel()
+                if trackpad.phase == .trackpad {
+                    _ = trackpad.ended()
+                    model.spaceTrackpadEnded()
+                }
+            }
+            .accessibilityElement()
+            .accessibilityLabel(Text(title))
+            .accessibilityAddTraits(.isKeyboardKey)
+            .accessibilityHint(Text("Hold to move the cursor, slide to place it"))
+            .accessibilityAction { model.spaceTapped() }
+    }
+
+    private func now() -> Double {
+        CACurrentMediaTime()
     }
 }
 

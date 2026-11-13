@@ -161,7 +161,7 @@ struct ChineseNineKeyBody<Globe: View>: View {
                     .frame(width: 40)
                     .background(KeyBackground(isAccent: false))
             }
-            NineKeyLabelKey(title: "空格") { model.spaceTapped() }
+            TrackpadSpaceKey(title: "空格", model: model)
             ModeToggleKey(model: model)
                 .frame(width: 72)
         }

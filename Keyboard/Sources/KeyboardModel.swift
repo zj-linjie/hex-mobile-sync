@@ -7,6 +7,9 @@ import UIKit
 struct KeyboardActions {
     var insertText: @MainActor (String) -> Void = { _ in }
     var deleteBackward: @MainActor () -> Void = {}
+    /// Moves the cursor `chars` positions, positive to the right: the text
+    /// proxy's relative move, the only cursor API a keyboard extension has.
+    var moveCursor: @MainActor (Int) -> Void = { _ in }
     var openHostApp: @MainActor (URL) -> Bool = { _ in false }
     var hasFullAccess: @MainActor () -> Bool = { false }
 }
@@ -203,6 +206,10 @@ final class KeyboardModel {
         })
     }
     var shift: ShiftState = .once
+    /// The space key is held past its hold: the keyboard dims and slides
+    /// move the cursor (see `spaceTrackpad…`). Never while a Chinese
+    /// composition is open — the space key commits candidates then.
+    private(set) var cursorTrackpad = false
     @ObservationIgnored private var lastShiftTap = Date.distantPast
     @ObservationIgnored var documentContextBeforeInput: () -> String? = { nil }
     /// Pasteboard change count when the current recording started: the
@@ -346,6 +353,7 @@ final class KeyboardModel {
         pingTimeout?.cancel()
         toggleReplyTimeout?.cancel()
         stopDeleting()
+        cursorTrackpad = false
     }
 
     func handle(_ signal: HexMobileIPC.Signal) {
@@ -514,6 +522,32 @@ final class KeyboardModel {
         // letters, like the system keyboard.
         if layer != .letters && layer != .chinese { layer = .letters }
         autoCapitalize()
+    }
+
+    // MARK: Space trackpad
+
+    /// The space key's hold elapsed: engage the cursor trackpad (the
+    /// keyboard dims) unless a Chinese composition is open, when the space
+    /// key keeps its commit job. Returns whether it engaged; a refused
+    /// gesture falls back to the space action on release.
+    func spaceTrackpadEngaged() -> Bool {
+        guard chineseInput.isEmpty, !chineseBusy else { return false }
+        KeyFeedback.tap(click: false)
+        cursorTrackpad = true
+        return true
+    }
+
+    /// One slide step of the engaged trackpad: `chars` whole positions,
+    /// positive to the right.
+    func spaceTrackpadMoved(_ chars: Int) {
+        guard cursorTrackpad, chars != 0 else { return }
+        actions.moveCursor(chars)
+    }
+
+    /// The space key's finger lifted with the trackpad engaged: the cursor
+    /// stays where the slide left it.
+    func spaceTrackpadEnded() {
+        cursorTrackpad = false
     }
 
     func returnTapped() {
