@@ -2261,6 +2261,16 @@
         }
       }
     },
+    "The transfer could not be shared. Download it in the sync folder and try again.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile condividere il trasferimento. Scaricalo nella cartella di sincronizzazione e riprova."
+          }
+        }
+      }
+    },
     "The transfer could not be queued. Check the sync folder and try again.": {
       "localizations": {
         "it": {

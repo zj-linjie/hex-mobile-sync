@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 
 struct TransfersView: View {
@@ -28,6 +29,10 @@ struct TransfersView: View {
                                 Button("Sync to Mac") { Task { await model.queue(row) } }
                                     .buttonStyle(.borderless)
                             }
+                            if row.status != .delivered {
+                                Button("Share") { Task { await model.share(row) } }
+                                    .buttonStyle(.borderless)
+                            }
                         }
                     }
                     .listRowBackground(HexPalette.card)
@@ -35,6 +40,9 @@ struct TransfersView: View {
                         Button("Delete", systemImage: "trash", role: .destructive) { Task { await model.delete(row) } }
                     }
                     .contextMenu {
+                        if row.status != .delivered {
+                            Button("Share", systemImage: "square.and.arrow.up") { Task { await model.share(row) } }
+                        }
                         if row.status == .held {
                             Button("Sync to Mac", systemImage: "arrow.up") { Task { await model.queue(row) } }
                         }
@@ -53,6 +61,12 @@ struct TransfersView: View {
             }
             .navigationTitle("Transfers")
             .toolbarTitleDisplayMode(.inlineLarge)
+            .background {
+                if let item = model.shareItem {
+                    TransferSharePresenter(items: item.items) { model.cleanupShare() }
+                        .id(item.id)
+                }
+            }
             .refreshable { await model.refresh() }
             .task { await model.refresh() }
             .fileImporter(isPresented: $model.needsFolder, allowedContentTypes: [.folder]) { result in
@@ -74,6 +88,43 @@ struct TransfersView: View {
         if row.count > 1 { return String(localized: "Multiple attachments") }
         switch row.kind { case .text: return String(localized: "Text"); case .image: return String(localized: "Image"); case .file: return String(localized: "File") }
     }
+    /// Presents the system share sheet once this host is in a window. A SwiftUI
+    /// sheet would wrap a second sheet around it.
+    private struct TransferSharePresenter: UIViewControllerRepresentable {
+        let items: [Any]
+        let onFinish: () -> Void
+
+        func makeUIViewController(context: Context) -> Host { Host() }
+
+        func updateUIViewController(_ controller: Host, context: Context) {
+            controller.items = items
+            controller.onFinish = onFinish
+            controller.presentIfReady()
+        }
+
+        final class Host: UIViewController {
+            var items: [Any] = []
+            var onFinish: () -> Void = {}
+            private var started = false
+
+            override func viewDidAppear(_ animated: Bool) {
+                super.viewDidAppear(animated)
+                view.backgroundColor = .clear
+                presentIfReady()
+            }
+
+            func presentIfReady() {
+                guard !started, !items.isEmpty, view.window != nil, presentedViewController == nil else { return }
+                started = true
+                let activity = UIActivityViewController(activityItems: items, applicationActivities: nil)
+                activity.completionWithItemsHandler = { _, _, _, _ in
+                    Task { @MainActor in self.onFinish() }
+                }
+                present(activity, animated: true)
+            }
+        }
+    }
+
     private func status(_ row: TransfersModel.Row) -> String {
         switch row.status {
         case .held: String(localized: "Not yet synced")

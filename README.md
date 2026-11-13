@@ -395,6 +395,7 @@ device-verified: [docs/VERIFICATION.md](docs/VERIFICATION.md).
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | how the pieces fit, the accurate pass, the text pipeline |
 | [docs/PLAN.md](docs/PLAN.md) | the original full specification |
 | [docs/TRANSFERS-PRD.md](docs/TRANSFERS-PRD.md) | product requirements for iPhone → Mac transfers (not built yet) |
+| [docs/TRANSFERS-SHARE-PRD.md](docs/TRANSFERS-SHARE-PRD.md) | share a transfer that is still on the iPhone to another app |
 | [docs/WHISPER.md](docs/WHISPER.md) | the optional Whisper engine in full detail |
 | [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md) | every field of the diagnostics logs |
 | [docs/DEBUG-LAUNCH-OPTIONS.md](docs/DEBUG-LAUNCH-OPTIONS.md) | Debug-only launch arguments for simulator runs |

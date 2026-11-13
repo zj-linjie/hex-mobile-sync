@@ -21,6 +21,8 @@ final class TransfersModel {
     var errorMessage: String?
     var needsFolder = false
     var openedDocument = false
+    var shareItem: ShareItem?
+    private var shareDirectory: URL?
     private var incoming: TransferDraft?
     private var delivered: [Row] = []
     private let sync: SyncManager
@@ -80,6 +82,31 @@ final class TransfersModel {
         } catch { errorMessage = String(localized: "The transfer could not be queued. Check the sync folder and try again.") }
     }
 
+    func share(_ row: Row) async {
+        guard !isBusy, shareItem == nil, row.status != .delivered, let folder = sync.folderURL else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            let copy = try await TransferFiles.shareCopy(id: row.id, directoryName: row.directoryName, in: folder)
+            var items: [Any] = []
+            if let text = copy.text { items.append(text) }
+            items.append(contentsOf: copy.files)
+            shareDirectory = copy.directory
+            shareItem = ShareItem(items: items)
+        } catch {
+            errorMessage = String(localized: "This transfer could not be shared. Download it in the sync folder and try again.")
+        }
+    }
+
+    /// Removes the temporary copies after the system share sheet closes.
+    func cleanupShare() {
+        shareItem = nil
+        if let shareDirectory {
+            try? FileManager.default.removeItem(at: shareDirectory)
+            self.shareDirectory = nil
+        }
+    }
+
     func delete(_ row: Row) async {
         guard !isBusy else { return }
         isBusy = true
@@ -133,6 +160,11 @@ final class TransfersModel {
             try await TransferFiles.save(incoming, title: title.isEmpty ? String(localized: "Transfer") : title, note: "", status: .held, in: folder)
             try await reload(in: folder)
         } catch { errorMessage = String(localized: "The transfer could not be saved. Check the sync folder and try again.") }
+    }
+
+    struct ShareItem: Identifiable {
+        let id = UUID()
+        let items: [Any]
     }
 
     private func persist(_ rows: [Row]) async throws {

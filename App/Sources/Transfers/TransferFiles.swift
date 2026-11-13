@@ -66,6 +66,36 @@ enum TransferFiles {
         }
     }
 
+    struct ShareCopy: Sendable {
+        let directory: URL
+        let text: String?
+        let files: [URL]
+    }
+
+    /// Copies one still-present transfer into a temporary directory. The sync
+    /// folder is only read. An unfinished iCloud file fails before any item is returned.
+    static func shareCopy(id: UUID, directoryName: String, in folder: URL) async throws -> ShareCopy {
+        let staging = try TransferStaging.newDirectory()
+        do {
+            let prepared = try await SyncFolderIO.transfers(in: folder) { root in
+                guard UUID(uuidString: directoryName) == id else { throw TransferShare.Failure.unavailable }
+                let directory = root.appending(path: directoryName, directoryHint: .isDirectory)
+                let manifestURL = directory.appending(path: TransferCodec.manifestFileName)
+                if let data = try? boundedData(at: manifestURL),
+                   let manifest = try? TransferCodec.decodeManifest(from: data), manifest.id == id {
+                    for attachment in manifest.attachments {
+                        try? FileManager.default.startDownloadingUbiquitousItem(at: directory.appending(path: attachment.name))
+                    }
+                }
+                return try TransferShare.prepare(source: directory, destination: staging)
+            }
+            return ShareCopy(directory: staging, text: prepared.text, files: prepared.files)
+        } catch {
+            try? FileManager.default.removeItem(at: staging)
+            throw error
+        }
+    }
+
     static func remove(id: UUID, directoryName: String, in folder: URL) async throws {
         try await SyncFolderIO.transfers(in: folder) { root in
             guard UUID(uuidString: directoryName) == id else { throw TransferImportError.unavailable }

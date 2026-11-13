@@ -333,6 +333,7 @@ iPhone 16 Pro 上的日常听写：键盘打进其他 App、后台 Action Button
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 各部分如何协作、精确转写、文本流水线 |
 | [docs/PLAN.md](docs/PLAN.md) | 原始完整规格 |
 | [docs/TRANSFERS-PRD.md](docs/TRANSFERS-PRD.md) | iPhone 转发到 Mac 的转入需求（尚未实现） |
+| [docs/TRANSFERS-SHARE-PRD.md](docs/TRANSFERS-SHARE-PRD.md) | 把还在 iPhone 上的一条转入分享到其他 App |
 | [docs/WHISPER.md](docs/WHISPER.md) | 可选 Whisper 引擎的全部细节 |
 | [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md) | 诊断日志逐字段说明 |
 | [docs/DEBUG-LAUNCH-OPTIONS.md](docs/DEBUG-LAUNCH-OPTIONS.md) | Debug 构建的启动参数 |
