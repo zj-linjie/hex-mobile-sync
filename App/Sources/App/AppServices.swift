@@ -13,6 +13,7 @@ final class AppServices {
 
     let settings: SettingsStore
     let sync: SyncManager
+    let transfers: TransfersModel
     let history: HistoryModel
     let dictation: DictationController
     let speechAssets: SpeechAssetsModel
@@ -27,6 +28,7 @@ final class AppServices {
         let history = HistoryModel(retention: settings.historyRetention)
         self.settings = settings
         self.sync = sync
+        self.transfers = TransfersModel(sync: sync)
         self.history = history
         #if DEBUG
         let finalPass: any FinalPassEngine = LaunchOptions.fakeFinalPass.map { FakeFinalPassEngine(mode: $0) } ?? AppleFinalPassEngine()
@@ -60,6 +62,7 @@ final class AppServices {
         #endif
         await history.reload()
         await sync.refresh(historyExport: settings.shareHistory ? history.jsonLinesExport() : nil)
+        await transfers.refresh()
         await speechAssets.refresh(for: currentLocale)
     }
 
@@ -219,6 +222,10 @@ final class AppServices {
 
     /// Handles `hexmobile://` links.
     func handle(url: URL) async {
+        if url.isFileURL {
+            await transfers.openDocument(url)
+            return
+        }
         guard let route = HexMobileIPC.Route(url: url) else { return }
         switch route {
         case .sessionStart:

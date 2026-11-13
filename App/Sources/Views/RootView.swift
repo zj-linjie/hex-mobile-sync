@@ -3,7 +3,7 @@ import SwiftUI
 /// The app's tabs.
 struct RootView: View {
     enum TabID: String, Hashable {
-        case dictate, history, vocabulary, settings
+        case dictate, history, vocabulary, settings, transfers
     }
 
     @State private var selection: TabID = LaunchOptions.initialTab.flatMap(TabID.init(rawValue:)) ?? .dictate
@@ -24,6 +24,15 @@ struct RootView: View {
             Tab("Settings", systemImage: "slider.horizontal.3", value: TabID.settings) {
                 SettingsView()
             }
+            Tab("Transfers", systemImage: "tray.and.arrow.down", value: TabID.transfers) {
+                TransfersView()
+            }
+        }
+        .onChange(of: services.transfers.needsFolder) { _, needed in
+            if needed { selection = .transfers }
+        }
+        .onChange(of: services.transfers.openedDocument) { _, opened in
+            if opened { selection = .transfers; services.transfers.openedDocument = false }
         }
         // Outline symbols, as in Hex's sidebar.
         .environment(\.symbolVariants, .none)

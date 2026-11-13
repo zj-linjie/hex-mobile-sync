@@ -125,6 +125,9 @@ Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · full spec:
   push — nothing a free Personal Team cannot sign.
 - English and Italian user interface.
 
+- **Share extension signing:** Transfers adds a fourth App ID, `$(BUNDLE_ID_PREFIX).HexMobile.Share`. Free Personal Team App ID limits may prevent signing all four targets; use a paid developer account if needed. The share extension has no App Group or iCloud entitlement and asks for its own sync-folder bookmark.
+
+
 ## Screenshots
 
 Captured on the iOS Simulator with synthetic demo content (Debug builds only —
@@ -391,6 +394,7 @@ device-verified: [docs/VERIFICATION.md](docs/VERIFICATION.md).
 |---|---|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | how the pieces fit, the accurate pass, the text pipeline |
 | [docs/PLAN.md](docs/PLAN.md) | the original full specification |
+| [docs/TRANSFERS-PRD.md](docs/TRANSFERS-PRD.md) | product requirements for iPhone → Mac transfers (not built yet) |
 | [docs/WHISPER.md](docs/WHISPER.md) | the optional Whisper engine in full detail |
 | [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md) | every field of the diagnostics logs |
 | [docs/DEBUG-LAUNCH-OPTIONS.md](docs/DEBUG-LAUNCH-OPTIONS.md) | Debug-only launch arguments for simulator runs |

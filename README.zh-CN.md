@@ -101,6 +101,9 @@ iPhone：Hex Mobile App ── SpeechAnalyzer（端上）── 精确二次转�
   Team 签不了的一概不用。
 - 界面语言：英语与意大利语。
 
+- **分享扩展签名限制：** 转入新增第四个 App ID：`$(BUNDLE_ID_PREFIX).HexMobile.Share`。免费 Personal Team 的 App ID 数量限制可能导致四个 target 无法全部签名，此时需要付费开发者账号。分享扩展不使用 App Group 或 iCloud entitlement，单独选择同步文件夹并保存书签。
+
+
 ## 截图
 
 截图取自 iOS 模拟器的合成演示内容（仅 Debug 构建——启动参数见
@@ -329,6 +332,7 @@ iPhone 16 Pro 上的日常听写：键盘打进其他 App、后台 Action Button
 |---|---|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 各部分如何协作、精确转写、文本流水线 |
 | [docs/PLAN.md](docs/PLAN.md) | 原始完整规格 |
+| [docs/TRANSFERS-PRD.md](docs/TRANSFERS-PRD.md) | iPhone 转发到 Mac 的转入需求（尚未实现） |
 | [docs/WHISPER.md](docs/WHISPER.md) | 可选 Whisper 引擎的全部细节 |
 | [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md) | 诊断日志逐字段说明 |
 | [docs/DEBUG-LAUNCH-OPTIONS.md](docs/DEBUG-LAUNCH-OPTIONS.md) | Debug 构建的启动参数 |

@@ -1,0 +1,356 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%lld attachments": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld allegati"
+          }
+        }
+      }
+    },
+    "A transfer can contain up to 10 attachments. Nothing was saved.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un trasferimento può contenere fino a 10 allegati. Non è stato salvato nulla."
+          }
+        }
+      }
+    },
+    "Access to the sync folder was denied. Pick the folder again in Settings.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accesso alla cartella di sincronizzazione negato. Scegli di nuovo la cartella nelle Impostazioni."
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annulla"
+          }
+        }
+      }
+    },
+    "Choose Sync Folder": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scegli cartella di sincronizzazione"
+          }
+        }
+      }
+    },
+    "Delete": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elimina"
+          }
+        }
+      }
+    },
+    "Delivered to Mac": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consegnato al Mac"
+          }
+        }
+      }
+    },
+    "Each attachment must be at most 100 MB, and the transfer at most 200 MB. Nothing was saved.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ogni allegato può occupare al massimo 100 MB e il trasferimento 200 MB. Non è stato salvato nulla."
+          }
+        }
+      }
+    },
+    "File": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File"
+          }
+        }
+      }
+    },
+    "Folders and packages cannot be transferred.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non è possibile trasferire cartelle e pacchetti."
+          }
+        }
+      }
+    },
+    "Held items are already in your iCloud folder. Your Mac receives them only after you sync.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gli elementi salvati sono già nella cartella iCloud. Il Mac li riceve solo dopo la sincronizzazione."
+          }
+        }
+      }
+    },
+    "Image": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Immagine"
+          }
+        }
+      }
+    },
+    "Multiple attachments": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Più allegati"
+          }
+        }
+      }
+    },
+    "No Transfers": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessun trasferimento"
+          }
+        }
+      }
+    },
+    "Not yet synced": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non ancora sincronizzato"
+          }
+        }
+      }
+    },
+    "Note (optional, up to 200 characters)": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nota (facoltativa, fino a 200 caratteri)"
+          }
+        }
+      }
+    },
+    "OK": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "Save for later": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salva per dopo"
+          }
+        }
+      }
+    },
+    "Share plain text, a URL, an image, or a regular file. Rich text needs a plain-text representation.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Condividi testo semplice, un URL, un’immagine o un file normale. Il testo formattato richiede una versione in testo semplice."
+          }
+        }
+      }
+    },
+    "Share text, images, or files to Hex Mobile. Saved items wait here until you sync them to your Mac.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Condividi testo, immagini o file con Hex Mobile. Gli elementi salvati restano qui finché non li sincronizzi con il Mac."
+          }
+        }
+      }
+    },
+    "Some filenames are duplicated or reserved. Rename the files and share again. Nothing was saved.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alcuni nomi di file sono duplicati o riservati. Rinomina i file e condividili di nuovo. Non è stato salvato nulla."
+          }
+        }
+      }
+    },
+    "Sync to Mac": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sincronizza con il Mac"
+          }
+        }
+      }
+    },
+    "Text": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testo"
+          }
+        }
+      }
+    },
+    "The shared item could not be read. Download it in the source app and try again.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile leggere l’elemento condiviso. Scaricalo nell’app di origine e riprova."
+          }
+        }
+      }
+    },
+    "The sync folder could not be read or written: %@": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile leggere o scrivere la cartella di sincronizzazione: %@"
+          }
+        }
+      }
+    },
+    "The sync folder could not be saved. Choose the folder again.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile salvare la cartella di sincronizzazione. Scegli di nuovo la cartella."
+          }
+        }
+      }
+    },
+    "The transfer could not be deleted. Check the sync folder and try again.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile eliminare il trasferimento. Controlla la cartella di sincronizzazione e riprova."
+          }
+        }
+      }
+    },
+    "The transfer could not be queued. Check the sync folder and try again.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile mettere il trasferimento in coda. Controlla la cartella di sincronizzazione e riprova."
+          }
+        }
+      }
+    },
+    "The transfer could not be saved. Check the sync folder and try again.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile salvare il trasferimento. Controlla la cartella di sincronizzazione e riprova."
+          }
+        }
+      }
+    },
+    "Title": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titolo"
+          }
+        }
+      }
+    },
+    "Transfer": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trasferimento"
+          }
+        }
+      }
+    },
+    "Transfers": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trasferimenti"
+          }
+        }
+      }
+    },
+    "Transfers could not be refreshed. Check the sync folder and try again.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile aggiornare i trasferimenti. Controlla la cartella di sincronizzazione e riprova."
+          }
+        }
+      }
+    },
+    "Waiting for Mac": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In attesa del Mac"
+          }
+        }
+      }
+    },
+    "pending-vocabulary.json in the sync folder could not be read, so it was left unchanged: %@": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile leggere pending-vocabulary.json nella cartella di sincronizzazione. Il file non è stato modificato: %@"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

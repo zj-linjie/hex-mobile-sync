@@ -11,6 +11,9 @@
 #   STUB_HEX_MERGE_PENDING   pending file in which the first `vocabulary add`
 #                    adds a spelling to the entry with id "m1" (iPhone merge)
 #   STUB_HEX_SLEEP   seconds every command sleeps first (timeout tests)
+#   STUB_HEX_TRANSFER_RC     import exit status (default 0)
+#   STUB_HEX_TRANSFER_REPLY  import JSON reply (default imported true)
+#   STUB_HEX_VERSION_FAIL    set to fail --version
 set -euo pipefail
 
 state="${STUB_HEX_STATE:?STUB_HEX_STATE not set}"
@@ -18,6 +21,7 @@ mode="${STUB_HEX_MODE:-running}"
 printf '%s\n' "$*" >>"$state/calls.log"
 
 if [ "${1:-}" = "--version" ]; then
+    [ "${STUB_HEX_VERSION_FAIL:-0}" = "1" ] && exit 1
     echo "hex 9.8.7"
     exit 0
 fi
@@ -32,6 +36,18 @@ not_running() {
 [ "$mode" = "stopped" ] && not_running
 
 case "${1:-} ${2:-}" in
+    "transfers import")
+        [ "$#" -eq 5 ] && [ "$3" = "--dir" ] && [ "$5" = "--json" ] || exit 2
+        case "$4" in /*) ;; *) exit 2 ;; esac
+        # Prove a receipt was not written before the importer completed.
+        [ ! -e "$4/receipt.json" ] || exit 1
+        reply='{"imported":true}'
+        printf '%s\n' "${STUB_HEX_TRANSFER_REPLY:-$reply}"
+        if [ "${STUB_HEX_TRANSFER_RC:-0}" -ne 0 ]; then
+            printf 'PRIVATE-TRANSFER-CLI-ERROR\n' >&2
+        fi
+        exit "${STUB_HEX_TRANSFER_RC:-0}"
+        ;;
     "vocabulary list")
         cat "$state/vocabulary-list.json"
         ;;

@@ -118,6 +118,23 @@ enum SyncFolderIO {
         }.value
     }
 
+    /// The transfer tree shares the same security scope and coordinator as
+    /// vocabulary sync. Coordinate its parent so create/queue/delete are atomic
+    /// with respect to file-provider readers and other phone clients.
+    static func transfers<T: Sendable>(
+        in folder: URL, _ body: @escaping @Sendable (URL) throws -> T
+    ) async throws -> T {
+        try await Task.detached(priority: .utility) {
+            try withAccess(to: folder) {
+                var result: T?
+                try coordinatedWrite(at: folder, options: [.forMerging]) { url in
+                    result = try body(url.appending(path: TransferCodec.directoryName, directoryHint: .isDirectory))
+                }
+                return result!
+            }
+        }.value
+    }
+
     // MARK: - Helpers
 
     private static func withAccess<T>(to folder: URL, _ body: () throws -> T) throws -> T {

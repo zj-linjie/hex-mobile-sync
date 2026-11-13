@@ -31,6 +31,7 @@ setup() {
     export STUB_HEX_STATE="$T/stub"
     export STUB_HEX_MODE="running"
     unset STUB_HEX_ADD_FAIL STUB_HEX_APPEND_PENDING STUB_HEX_MERGE_PENDING STUB_HEX_SLEEP HEX_CLI_TIMEOUT
+    unset STUB_HEX_TRANSFER_RC STUB_HEX_TRANSFER_REPLY STUB_HEX_VERSION_FAIL
     export HEX_CLI="$FIXTURES/hex"
     export HEX_MOBILE_SYNC_DIR="$T/sync"
     export HEX_SETTINGS_FILE="$T/stub/settings.json"
@@ -437,6 +438,176 @@ test_install_print_renders_valid_plist() {
     expect_rc 1
 }
 
+# Synthetic transfer with spaces in its payload name and text that must never
+# appear in diagnostic output, even with --verbose.
+write_transfer() {
+    local status="${1:-queued}" id="${2:-11111111-1111-1111-1111-111111111111}"
+    TRANSFER="$T/sync/transfers/$id"
+    RECEIPT="$TRANSFER/receipt.json"
+    mkdir -p "$TRANSFER"
+    printf 'PRIVATE-TRANSFER-BODY' >"$TRANSFER/body text.txt"
+    jq -n --arg id "$id" --arg status "$status" \
+        '{schema_version: 1, id: $id, status: $status, created_at: "2026-11-13T00:00:00Z",
+          title: "PRIVATE-TRANSFER-TITLE", note: "PRIVATE-TRANSFER-NOTE",
+          attachments: [{name: "body text.txt", uti: "public.utf8-plain-text", bytes: 21, kind: "text"}]}' \
+        >"$TRANSFER/manifest.json"
+}
+
+transfer_calls() { grep -c '^transfers import ' "$STUB_HEX_STATE/calls.log" 2>/dev/null || true; }
+
+test_transfer_held() {
+    write_transfer held
+    run --once
+    expect_rc 0 || return 1
+    [ "$(transfer_calls)" -eq 0 ] || fail "held item imported" || return 1
+    [ ! -e "$RECEIPT" ] || fail "held item acknowledged"
+}
+
+test_transfer_receipt_and_second_run() {
+    write_transfer
+    cp "$TRANSFER/manifest.json" "$T/manifest.orig"
+    run --once
+    expect_rc 0 || return 1
+    [ "$(transfer_calls)" -eq 1 ] || fail "queued item not imported once" || return 1
+    expect_text "$STUB_HEX_STATE/calls.log" "^transfers import --dir $(cd "$TRANSFER" && pwd -P) --json$" || return 1
+    expect_jq "$RECEIPT" '.schema_version == 1 and .id == "11111111-1111-1111-1111-111111111111" and .hex_version == "9.8.7"' || return 1
+    expect_jq "$RECEIPT" '.delivered_at | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")' || return 1
+    cmp -s "$TRANSFER/manifest.json" "$T/manifest.orig" || fail "manifest changed" || return 1
+    expect_text "$TRANSFER/body text.txt" PRIVATE-TRANSFER-BODY || return 1
+    [ -z "$(find "$TRANSFER" -name '.receipt.json.*')" ] || fail "receipt temp file left behind" || return 1
+    cp "$RECEIPT" "$T/receipt.orig"
+    run --once
+    expect_rc 0 || return 1
+    [ "$(transfer_calls)" -eq 1 ] || fail "item imported again after receipt" || return 1
+    cmp -s "$RECEIPT" "$T/receipt.orig" || fail "existing receipt rewritten"
+}
+
+test_transfer_failure_then_retry() {
+    write_transfer
+    export STUB_HEX_TRANSFER_RC=1
+    run --once --verbose
+    expect_rc 4 || return 1
+    [ "$(transfer_calls)" -eq 1 ] || fail "import was not attempted" || return 1
+    [ ! -e "$RECEIPT" ] || fail "nonzero importer exit acknowledged" || return 1
+    expect_text "$HEX_MOBILE_LOG" "id=11111111-1111-1111-1111-111111111111 status=import-failed" || return 1
+    expect_no_text "$HEX_MOBILE_LOG" PRIVATE-TRANSFER || return 1
+    expect_no_text "$ERR" PRIVATE-TRANSFER || return 1
+    export STUB_HEX_TRANSFER_RC=0
+    run --once
+    expect_rc 0 || return 1
+    [ -f "$RECEIPT" ] || fail "successful retry not acknowledged"
+}
+
+test_transfer_dry_run() {
+    write_transfer
+    cp "$TRANSFER/manifest.json" "$T/manifest.orig"
+    run --dry-run
+    expect_rc 0 || return 1
+    [ "$(transfer_calls)" -eq 0 ] || fail "dry run imported" || return 1
+    [ ! -e "$RECEIPT" ] && [ ! -e "$BUNDLE" ] && [ ! -e "$HEX_MOBILE_LOG" ] || fail "dry run wrote files" || return 1
+    cmp -s "$TRANSFER/manifest.json" "$T/manifest.orig" || fail "dry run changed manifest" || return 1
+    expect_text "$ERR" 'would import transfer id=11111111-1111-1111-1111-111111111111 status=queued'
+}
+
+test_transfer_hex_stops() {
+    write_transfer queued 22222222-2222-2222-2222-222222222222
+    local second_receipt="$RECEIPT"
+    write_transfer
+    export STUB_HEX_TRANSFER_RC=3
+    run --once
+    expect_rc 0 || return 1
+    [ "$(transfer_calls)" -eq 1 ] || fail "kept calling a stopped Hex" || return 1
+    [ ! -e "$RECEIPT" ] && [ ! -e "$second_receipt" ] || fail "stopped Hex acknowledged" || return 1
+    expect_jq "$TRANSFER/manifest.json" '.status == "queued"' || return 1
+    [ "$(grep -c 'transfers queued: Hex is not running' "$HEX_MOBILE_LOG")" -eq 1 ] || fail "stopped log not once per run"
+}
+
+test_transfer_hex_already_stopped() {
+    write_transfer
+    export STUB_HEX_MODE=stopped
+    run --once
+    expect_rc 0 || return 1
+    [ "$(transfer_calls)" -eq 0 ] || fail "imported while Hex was stopped" || return 1
+    [ ! -e "$RECEIPT" ] || fail "stopped item acknowledged"
+}
+
+test_transfer_replies() {
+    write_transfer
+    export STUB_HEX_TRANSFER_REPLY='{"imported":false,"reason":"held"}'
+    run --once
+    expect_rc 0 || return 1
+    [ ! -e "$RECEIPT" ] || fail "held reply acknowledged" || return 1
+    export STUB_HEX_TRANSFER_REPLY='{"imported":false,"reason":"other"}'
+    run --once
+    expect_rc 4 || return 1
+    [ ! -e "$RECEIPT" ] || fail "unexpected reply acknowledged" || return 1
+    export STUB_HEX_TRANSFER_REPLY='not json'
+    run --once
+    expect_rc 4 || return 1
+    [ ! -e "$RECEIPT" ] || fail "malformed reply acknowledged" || return 1
+    export STUB_HEX_TRANSFER_REPLY='{"imported":false,"reason":"already"}'
+    export STUB_HEX_VERSION_FAIL=1
+    run --once
+    expect_rc 0 || return 1
+    expect_jq "$RECEIPT" '.hex_version == "unknown"'
+}
+
+test_transfer_partial_and_unsupported() {
+    write_transfer
+    cp "$TRANSFER/manifest.json" "$T/manifest.orig"
+    printf 'partial' >"$TRANSFER/body text.txt"
+    run --once
+    expect_rc 0 || return 1
+    [ "$(transfer_calls)" -eq 0 ] || fail "partial attachment imported" || return 1
+    rm "$TRANSFER/body text.txt"
+    run --once
+    expect_rc 0 || return 1
+    [ "$(transfer_calls)" -eq 0 ] || fail "missing attachment imported" || return 1
+    printf 'PRIVATE-TRANSFER-BODY' >"$TRANSFER/body text.txt"
+    chmod 000 "$TRANSFER/body text.txt"
+    run --once
+    chmod 600 "$TRANSFER/body text.txt"
+    expect_rc 0 || return 1
+    [ "$(transfer_calls)" -eq 0 ] || fail "unreadable attachment imported" || return 1
+    local filter
+    for filter in 'del(.schema_version)' '.schema_version = 2'; do
+        jq "$filter" "$T/manifest.orig" >"$TRANSFER/manifest.json"
+        run --once
+        expect_rc 0 || return 1
+        [ "$(transfer_calls)" -eq 0 ] || fail "unsupported manifest imported" || return 1
+    done
+    [ "$(grep -c 'status=unsupported-schema' "$HEX_MOBILE_LOG")" -eq 2 ] || fail "unsupported schema not logged once per item/run" || return 1
+    printf '{"schema_version":' >"$TRANSFER/manifest.json"
+    run --once
+    expect_rc 0 || return 1
+    [ "$(transfer_calls)" -eq 0 ] || fail "partial manifest imported" || return 1
+    [ ! -e "$RECEIPT" ] || fail "incomplete item acknowledged"
+}
+
+test_transfer_dataless() {
+    write_transfer
+    # A readable iCloud placeholder can report the correct logical byte count.
+    # Simulate just its BSD stat flags; all other stat calls use the OS tool.
+    mkdir "$T/bin"
+    cat >"$T/bin/stat" <<'EOF'
+#!/bin/bash
+if [ "$1" = "-f" ] && [ "$2" = "%Sf" ] && [ "$3" = "$STUB_DATALESS_FILE" ]; then
+    echo dataless
+else
+    exec /usr/bin/stat "$@"
+fi
+EOF
+    chmod +x "$T/bin/stat"
+    local file
+    for file in "$TRANSFER/manifest.json" "$TRANSFER/body text.txt"; do
+        RC=0
+        PATH="$T/bin:$PATH" STUB_DATALESS_FILE="$file" /bin/bash "$SCRIPT" --once >"$T/stdout" 2>"$T/stderr" || RC=$?
+        expect_rc 0 || return 1
+        [ "$(transfer_calls)" -eq 0 ] || fail "dataless file imported" || return 1
+    done
+    [ ! -e "$RECEIPT" ] || fail "dataless item acknowledged"
+}
+
 # ---------------------------------------------------------------- main
 
 command -v jq >/dev/null 2>&1 || { echo "jq is required"; exit 1; }
@@ -467,6 +638,15 @@ t "sync folder created once, parent never" test_sync_dir_created_once
 t "log rotated at 1 MB" test_log_rotation
 t "lock skips a concurrent run" test_lock_skips_concurrent_run
 t "install.sh --print renders a valid plist" test_install_print_renders_valid_plist
+t "held transfer is not imported" test_transfer_held
+t "queued transfer receipt and second-run idempotency" test_transfer_receipt_and_second_run
+t "failed transfer has no receipt and retries privately" test_transfer_failure_then_retry
+t "dry run does not import or acknowledge transfers" test_transfer_dry_run
+t "exit 3 keeps queued transfers and logs once" test_transfer_hex_stops
+t "already stopped Hex leaves transfers queued" test_transfer_hex_already_stopped
+t "transfer held, invalid and already replies; unknown version" test_transfer_replies
+t "partial, unreadable and unsupported transfers skipped" test_transfer_partial_and_unsupported
+t "iCloud dataless manifest and attachment skipped" test_transfer_dataless
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

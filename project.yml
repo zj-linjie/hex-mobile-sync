@@ -69,6 +69,9 @@ targets:
       - package: HexMobileWhisper
       - package: ArgmaxOSS
         product: WhisperKit
+      - target: HexMobileShare
+        embed: true
+        codeSign: true
       - target: HexMobileWidgets
         embed: true
         codeSign: true
@@ -136,6 +139,27 @@ targets:
         APPLICATION_EXTENSION_API_ONLY: YES
         SKIP_INSTALL: YES
 
+  HexMobileShare:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Share/Sources
+      - path: Share/Resources
+      - path: App/Sources/Sync/SyncFolderIO.swift
+      - path: App/Sources/Transfers/TransferDraft.swift
+      - path: App/Sources/Transfers/TransferFiles.swift
+      - path: Share/Info.plist
+        buildPhase: none
+    dependencies:
+      - package: HexMobileCore
+    settings:
+      base:
+        PRODUCT_NAME: HexMobileShare
+        PRODUCT_BUNDLE_IDENTIFIER: $(BUNDLE_ID_PREFIX).HexMobile.Share
+        INFOPLIST_FILE: Share/Info.plist
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+
 schemes:
   HexMobile:
     build:
@@ -143,6 +167,7 @@ schemes:
         HexMobile: all
         HexMobileWidgets: all
         HexKeyboard: all
+        HexMobileShare: all
     run:
       config: Debug
     archive:

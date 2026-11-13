@@ -21,6 +21,16 @@
         }
       }
     },
+    "%lld attachments": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld allegati"
+          }
+        }
+      }
+    },
     "%lld min": {
       "localizations": {
         "it": {
@@ -67,6 +77,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "1 ora"
+          }
+        }
+      }
+    },
+    "A transfer can contain up to 10 attachments. Nothing was saved.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un trasferimento può contenere fino a 10 allegati. Non è stato salvato nulla."
           }
         }
       }
@@ -227,6 +247,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cambia cartella…"
+          }
+        }
+      }
+    },
+    "Choose Sync Folder": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scegli cartella di sincronizzazione"
           }
         }
       }
@@ -401,6 +431,16 @@
         }
       }
     },
+    "Delivered to Mac": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consegnato al Mac"
+          }
+        }
+      }
+    },
     "Dictate": {
       "localizations": {
         "it": {
@@ -541,6 +581,16 @@
         }
       }
     },
+    "Each attachment must be at most 100 MB, and the transfer at most 200 MB. Nothing was saved.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ogni allegato può occupare al massimo 100 MB e il trasferimento 200 MB. Non è stato salvato nulla."
+          }
+        }
+      }
+    },
     "End After Idle": {
       "localizations": {
         "it": {
@@ -587,6 +637,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Esportato dal Mac"
+          }
+        }
+      }
+    },
+    "File": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File"
           }
         }
       }
@@ -691,6 +751,16 @@
         }
       }
     },
+    "Folders and packages cannot be transferred.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non è possibile trasferire cartelle e pacchetti."
+          }
+        }
+      }
+    },
     "For the keyboard": {
       "localizations": {
         "it": {
@@ -751,6 +821,16 @@
         }
       }
     },
+    "Held items are already in your iCloud folder. Your Mac receives them only after you sync.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gli elementi salvati sono già nella cartella iCloud. Il Mac li riceve solo dopo la sincronizzazione."
+          }
+        }
+      }
+    },
     "Hex Mobile": {
       "localizations": {
         "it": {
@@ -807,6 +887,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "La cronologia resta su questo iPhone e non è inclusa nei backup di iCloud o del computer. Con la condivisione attiva, il testo finale di ogni dettatura viene scritto anche in %@ nella cartella di sincronizzazione; disattivando la condivisione il file viene rimosso."
+          }
+        }
+      }
+    },
+    "Image": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Immagine"
           }
         }
       }
@@ -991,6 +1081,16 @@
         }
       }
     },
+    "Multiple attachments": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Più allegati"
+          }
+        }
+      }
+    },
     "Names and technical words you add here help recognition and keep their spelling. They are sent to Hex on your Mac at the next sync.": {
       "localizations": {
         "it": {
@@ -1007,6 +1107,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mai"
+          }
+        }
+      }
+    },
+    "No Transfers": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessun trasferimento"
           }
         }
       }
@@ -1057,6 +1167,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nessun accesso alla rete, nessuna analisi. Audio e testo non lasciano mai questo iPhone, tranne i file che scegli di scrivere nella cartella di sincronizzazione e le copie che consenti negli Appunti universali."
+          }
+        }
+      }
+    },
+    "No record of Whisper loading on this iPhone yet, or iOS was updated since. The first load makes Core ML compile the model for the Neural Engine and took about 12 minutes on an iPhone 16 Pro. Tap Prepare Whisper and keep Hex Mobile open on screen until the status says Ready. Until then Apple's text is used.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessuna traccia di un caricamento di Whisper su questo iPhone, oppure iOS è stato aggiornato da allora. Il primo caricamento fa compilare il modello a Core ML per il Neural Engine e su un iPhone 16 Pro è durato circa 12 minuti. Tocca Prepara Whisper e tieni Hex Mobile aperta sullo schermo finché lo stato non dice Pronto. Fino ad allora si usa il testo di Apple."
           }
         }
       }
@@ -1171,6 +1291,26 @@
         }
       }
     },
+    "Not yet synced": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non ancora sincronizzato"
+          }
+        }
+      }
+    },
+    "Note (optional, up to 200 characters)": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nota (facoltativa, fino a 200 caratteri)"
+          }
+        }
+      }
+    },
     "Nothing dictated yet. Tap the hexagon and start speaking, or hold it to talk.": {
       "localizations": {
         "it": {
@@ -1187,6 +1327,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ancora nulla di sincronizzato. Scegli la cartella Hex Mobile nelle Impostazioni."
+          }
+        }
+      }
+    },
+    "OK": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
           }
         }
       }
@@ -1451,6 +1601,16 @@
         }
       }
     },
+    "Save for later": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salva per dopo"
+          }
+        }
+      }
+    },
     "Search history": {
       "localizations": {
         "it": {
@@ -1521,12 +1681,42 @@
         }
       }
     },
+    "Share plain text, a URL, an image, or a regular file. Rich text needs a plain-text representation.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Condividi testo semplice, un URL, un’immagine o un file normale. Il testo formattato richiede una versione in testo semplice."
+          }
+        }
+      }
+    },
+    "Share text, images, or files to Hex Mobile. Saved items wait here until you sync them to your Mac.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Condividi testo, immagini o file con Hex Mobile. Gli elementi salvati restano qui finché non li sincronizzi con il Mac."
+          }
+        }
+      }
+    },
     "Skipped on iPhone: %@. Only built-in transformations run here.": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
             "value": "Saltate su iPhone: %@. Qui funzionano solo le trasformazioni integrate."
+          }
+        }
+      }
+    },
+    "Some filenames are duplicated or reserved. Rename the files and share again. Nothing was saved.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alcuni nomi di file sono duplicati o riservati. Rinomina i file e condividili di nuovo. Non è stato salvato nulla."
           }
         }
       }
@@ -1701,6 +1891,16 @@
         }
       }
     },
+    "Sync to Mac": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sincronizza con il Mac"
+          }
+        }
+      }
+    },
     "Sync with Hex": {
       "localizations": {
         "it": {
@@ -1807,6 +2007,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "I termini aggiunti nella scheda Vocabolario vengono scritti nella stessa cartella e aggiunti a Hex alla prossima esecuzione dello script sul Mac con Hex aperto."
+          }
+        }
+      }
+    },
+    "Text": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testo"
           }
         }
       }
@@ -1971,6 +2181,16 @@
         }
       }
     },
+    "The shared item could not be read. Download it in the source app and try again.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile leggere l’elemento condiviso. Scaricalo nell’app di origine e riprova."
+          }
+        }
+      }
+    },
     "The speech model for %@ is installed but cannot be loaded on this device.": {
       "localizations": {
         "it": {
@@ -2001,6 +2221,16 @@
         }
       }
     },
+    "The sync folder could not be saved. Choose the folder again.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile salvare la cartella di sincronizzazione. Scegli di nuovo la cartella."
+          }
+        }
+      }
+    },
     "The system did not offer the speech model for %@ for download. Try again later.": {
       "localizations": {
         "it": {
@@ -2017,6 +2247,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mancano i file del tokenizer (%@). Senza, la libreria li scaricherebbe, cosa che questa app non fa mai."
+          }
+        }
+      }
+    },
+    "The transfer could not be deleted. Check the sync folder and try again.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile eliminare il trasferimento. Controlla la cartella di sincronizzazione e riprova."
+          }
+        }
+      }
+    },
+    "The transfer could not be queued. Check the sync folder and try again.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile mettere il trasferimento in coda. Controlla la cartella di sincronizzazione e riprova."
+          }
+        }
+      }
+    },
+    "The transfer could not be saved. Check the sync folder and try again.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile salvare il trasferimento. Controlla la cartella di sincronizzazione e riprova."
           }
         }
       }
@@ -2061,6 +2321,16 @@
         }
       }
     },
+    "Title": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titolo"
+          }
+        }
+      }
+    },
     "Toggle Dictation": {
       "localizations": {
         "it": {
@@ -2097,6 +2367,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "La trascrizione avviene interamente su questo iPhone. Il vocabolario di Hex viene usato come suggerimento per il riconoscimento."
+          }
+        }
+      }
+    },
+    "Transfer": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trasferimento"
+          }
+        }
+      }
+    },
+    "Transfers": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trasferimenti"
+          }
+        }
+      }
+    },
+    "Transfers could not be refreshed. Check the sync folder and try again.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile aggiornare i trasferimenti. Controlla la cartella di sincronizzazione e riprova."
           }
         }
       }
@@ -2201,6 +2501,16 @@
         }
       }
     },
+    "Waiting for Mac": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In attesa del Mac"
+          }
+        }
+      }
+    },
     "What Hex pastes": {
       "localizations": {
         "it": {
@@ -2257,16 +2567,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Modello Whisper"
-          }
-        }
-      }
-    },
-    "No record of Whisper loading on this iPhone yet, or iOS was updated since. The first load makes Core ML compile the model for the Neural Engine and took about 12 minutes on an iPhone 16 Pro. Tap Prepare Whisper and keep Hex Mobile open on screen until the status says Ready. Until then Apple's text is used.": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nessuna traccia di un caricamento di Whisper su questo iPhone, oppure iOS è stato aggiornato da allora. Il primo caricamento fa compilare il modello a Core ML per il Neural Engine e su un iPhone 16 Pro è durato circa 12 minuti. Tocca Prepara Whisper e tieni Hex Mobile aperta sullo schermo finché lo stato non dice Pronto. Fino ad allora si usa il testo di Apple."
           }
         }
       }

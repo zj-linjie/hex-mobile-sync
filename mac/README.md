@@ -1,7 +1,8 @@
 # Mac side: `hex-mobile-sync.sh`
 
 Exports Hex vocabulary, dictation language and dictation modes to the shared
-folder the iPhone app reads, and applies vocabulary terms added on the iPhone.
+folder the iPhone app reads, applies vocabulary terms added on the iPhone,
+and imports complete queued transfers into the running Hex app.
 Runs as a per-user launchd agent. macOS `/bin/bash` 3.2, BSD tools and `jq`
 (shipped as `/usr/bin/jq` on recent macOS, otherwise `brew install jq`).
 
@@ -12,8 +13,12 @@ Runs as a per-user launchd agent. macOS `/bin/bash` 3.2, BSD tools and `jq`
 | `hex-mobile-sync.json` | this script | iPhone app |
 | `pending-vocabulary.json` | iPhone app | this script |
 | `pending-vocabulary.invalid-<UTC timestamp>.json` | this script (invalid pending file moved aside) | you |
+| `transfers/<uuid>/manifest.json` | iPhone app or share extension | this script and Hex CLI |
+| `transfers/<uuid>/body.txt` and other attachments | iPhone app or share extension | Hex CLI |
+| `transfers/<uuid>/receipt.json` | this script after successful import | iPhone app (then removes the shared payload) |
 
 Formats are specified in [`docs/PLAN.md`](../docs/PLAN.md#sync-file-format-hex-mobile-syncjson-written-by-the-mac-script).
+Transfer manifests and receipts use schema 1 from [`docs/TRANSFERS-PRD.md`](../docs/TRANSFERS-PRD.md#同步文件夹).
 
 ## What a run does
 
@@ -30,6 +35,7 @@ Formats are specified in [`docs/PLAN.md`](../docs/PLAN.md#sync-file-format-hex-m
    `post_processing` appears anywhere in the result.
 7. Writes `hex-mobile-sync.json` atomically (temp file + rename in the same
    folder), only when its content other than `exported_at` changed.
+8. Scans `transfers/*/manifest.json` and imports complete queued items (see below).
 
 `app_version` comes from `hex --version`, or from the app's `Info.plist` if that fails.
 Terms whose `sounds_like` is `null` in Hex are exported with `[]`.
@@ -67,6 +73,29 @@ For each entry of `pending-vocabulary.json` (`schema_version` 1):
   A `schema_version` newer than 1 is left untouched (exit 4, log, notification).
 - Entries without a usable `term` are dropped with a warning.
 
+## Transfers
+
+After the vocabulary steps, the script skips held items, directories with an
+existing receipt, unreadable or iCloud dataless files, incomplete manifests,
+and attachments whose local byte count differs from the manifest. It accepts
+schema 1 only; missing, newer or invalid schemas are logged once per item per
+run and left untouched. Attachment names must be safe filenames and the UUID
+must match its directory.
+
+For each complete queued item, while Hex is running, it calls
+`hex transfers import --dir <absolute directory> --json`. Only exit 0 with
+`imported: true`, or `imported: false` and `reason: "already"`, produces a
+receipt. The script writes it through a temporary file and rename in the same
+directory, with `schema_version: 1`, `id`, UTC `delivered_at`, and `hex_version`
+from `hex --version` (`unknown` if unavailable). It keeps the manifest and
+attachments for the iPhone to delete after reading the receipt.
+
+A `held` reply leaves the item without a receipt. Exit 3 stops further imports
+for that pass, keeps queued items and logs once. Other failures or unexpected
+replies keep the item for retry, log only its UUID and status, and return exit 4
+after the pass. Transfer text, attachment bytes and CLI error output are never
+logged, including with `--verbose`.
+
 ## Usage
 
 ```sh
@@ -77,7 +106,7 @@ mac/hex-mobile-sync.sh --dry-run --verbose  # read only; prints the bundle to st
 | Flag | Effect |
 |---|---|
 | `--once` | single pass and exit; this is the default, the flag makes it explicit (used by launchd) |
-| `--dry-run` | writes nothing: no bundle, no log, no `vocabulary add`, no pending rewrite or move, no notification. Prints the bundle to stdout |
+| `--dry-run` | writes nothing: no bundle, no log, no `vocabulary add`, no pending rewrite or move, no transfer import or receipt, no notification. Prints the bundle to stdout and planned transfer UUIDs to stderr |
 | `--verbose` | log lines also on stderr (warnings and errors always are), and vocabulary terms and spellings in the log |
 | `--help` | usage, environment and exit codes |
 
@@ -89,7 +118,7 @@ mac/hex-mobile-sync.sh --dry-run --verbose  # read only; prints the bundle to st
 | 1 | fatal: `jq` or the hex CLI missing, CLI error, unreadable data, write failure. The previous bundle is kept |
 | 2 | usage error |
 | 3 | Hex not running and the `settings.json` fallback is missing or invalid |
-| 4 | done with warnings: invalid or future-schema pending file, pending entries not applied |
+| 4 | done with warnings: invalid or future-schema pending file, pending entries not applied, transfer import or receipt failure |
 
 ### Environment
 
@@ -118,6 +147,7 @@ notification per day. When Hex changes its reply format, update
 By default the log holds counts and entry numbers (`pending entry #2 added to
 Hex`), never vocabulary terms, spellings or CLI output. `--verbose` adds them,
 for debugging. Read the log before attaching it to a bug report anyway.
+Transfer logs always contain only validated UUIDs and fixed status messages.
 
 ## Error handling
 
@@ -163,3 +193,7 @@ tests/mac/test-sync.sh
 
 Uses a stub `hex` CLI (`tests/mac/fixtures/hex`) with synthetic data; it never
 calls the real Hex, launchd or iCloud Drive.
+Transfer checks cover held/queued delivery, receipt idempotency, importer
+failures and replies, dry runs, stopped Hex, incomplete and unreadable files,
+and simulated iCloud dataless flags. Real iCloud hydration and native-app
+delivery still need device verification.

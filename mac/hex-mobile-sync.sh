@@ -1,7 +1,8 @@
 #!/bin/bash
 #
 # hex-mobile-sync.sh: export Hex vocabulary and text rules to a shared folder
-# for the Hex Mobile iPhone app, and apply vocabulary terms added on the iPhone.
+# for the Hex Mobile iPhone app, apply vocabulary terms added on the iPhone,
+# and import queued transfers through the Hex CLI.
 #
 # Compatible with macOS /bin/bash 3.2 and BSD userland. Requires jq.
 #
@@ -13,7 +14,7 @@
 #   2  usage error
 #   3  Hex is not running and the read-only settings.json fallback is unreadable
 #   4  done with warnings: invalid pending file moved aside, unsupported pending
-#      schema, or some pending entries could not be applied
+#      schema, pending entries not applied, or transfer import/receipt failures
 #
 # Environment overrides (see mac/README.md):
 #   HEX_CLI               path to the hex CLI
@@ -59,12 +60,15 @@ Usage: hex-mobile-sync.sh [--once] [--dry-run] [--verbose] [--help]
 Exports Hex vocabulary, language and dictation modes (without post_processing)
 to hex-mobile-sync.json in the sync folder, and applies pending-vocabulary.json
 written by the iPhone app through `hex vocabulary add` when Hex is running.
+Imports complete queued transfers through `hex transfers import`, then writes
+an atomic receipt for the iPhone to read before it deletes the shared payload.
 
 Options:
   --once      Run a single sync pass and exit. This is the default; the flag
               exists so launchd and manual invocations can be explicit.
   --dry-run   Read everything, write nothing: no bundle, no `vocabulary add`,
-              no pending rewrite, no notification. Prints the bundle to stdout.
+              no pending rewrite, no transfer import or receipt, no notification.
+              Prints the bundle to stdout and planned transfers to stderr.
   --verbose   Also print log lines to stderr.
   --help      Show this help.
 
@@ -86,7 +90,8 @@ Exit codes:
   1  fatal error (CLI or jq missing, CLI error, unreadable data, write failure)
   2  usage error
   3  Hex not running and the settings.json fallback is unreadable
-  4  done with warnings (invalid or unsupported pending file, entries not applied)
+  4  done with warnings (invalid or unsupported pending file, entries not applied,
+     transfer import or receipt failure)
 EOF
 }
 
@@ -544,6 +549,121 @@ rewrite_pending() {
     info "pending vocabulary: $(jq 'length' "$d/applied.entries") applied, $(jq '.entries | length' "$d/pending.next") remaining"
 }
 
+# ---------------------------------------------------------------- transfers
+
+# Check metadata before reading: opening an iCloud dataless file may download
+# it. A readable placeholder's advertised size alone is not proof of delivery.
+transfer_file_ready() {
+    local flags
+    [ -f "$1" ] && [ -r "$1" ] && [ ! -L "$1" ] || return 1
+    flags=$(stat -f %Sf "$1" 2>/dev/null) || return 1
+    case "$flags" in *dataless* | *offline*) return 1 ;; esac
+    return 0
+}
+
+transfer_attachments_ready() {
+    local manifest="$1" dir="$2" name bytes size
+    # NUL-delimited fields preserve spaces, tabs and newlines in filenames.
+    while IFS= read -r -d '' name && IFS= read -r -d '' bytes; do
+        transfer_file_ready "$dir/$name" || return 1
+        size=$(stat -f %z "$dir/$name" 2>/dev/null) || return 1
+        [ "$size" = "$bytes" ] || return 1
+    done < <(jq -j '.attachments[] | .name, "\u0000", (.bytes | tostring), "\u0000"' "$manifest")
+    return 0
+}
+
+import_transfers() {
+    local d="$1" running="$2" manifest dir id status rc version="" receipt_tmp
+    local stopped_logged=0
+    for manifest in "$HEX_MOBILE_SYNC_DIR"/transfers/*/manifest.json; do
+        dir=${manifest%/manifest.json}
+        [ -d "$dir" ] && [ ! -L "$dir" ] || continue
+        [ ! -e "$dir/receipt.json" ] && [ ! -L "$dir/receipt.json" ] || continue
+        transfer_file_ready "$manifest" || continue
+        # Snapshot so validation and attachment enumeration use the same data.
+        cp "$manifest" "$d/transfer.manifest" 2>/dev/null || continue
+        if ! jq -e 'type == "object"' "$d/transfer.manifest" >/dev/null 2>&1; then
+            info "transfer skipped: status=partial-manifest"
+            continue
+        fi
+        if ! jq -e '.schema_version == 1' "$d/transfer.manifest" >/dev/null 2>&1; then
+            info "transfer skipped: status=unsupported-schema"
+            continue
+        fi
+        # Reject unsafe names before touching attachments. IDs are UUIDs and
+        # match their directory; log only validated IDs, never manifest text.
+        if ! jq -e --arg dirname "${dir##*/}" '
+            (.id | type == "string" and test("^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$"))
+            and .id == $dirname and (.status == "held" or .status == "queued")
+            and (.created_at | type == "string") and (.title | type == "string")
+            and (.note | type == "string") and (.attachments | type == "array")
+            and all(.attachments[];
+                type == "object"
+                and (.name | type == "string" and length > 0
+                    and . != "." and . != ".." and . != "manifest.json" and . != "receipt.json"
+                    and (contains("/") | not) and (contains("\u0000") | not))
+                and (.uti | type == "string")
+                and (.bytes | type == "number" and . >= 0 and . == floor)
+                and (.kind == "text" or .kind == "image" or .kind == "file"))
+        ' "$d/transfer.manifest" >/dev/null 2>&1; then
+            info "transfer skipped: status=invalid-manifest"
+            continue
+        fi
+        id=$(jq -r '.id' "$d/transfer.manifest")
+        status=$(jq -r '.status' "$d/transfer.manifest")
+        [ "$status" = "queued" ] || continue
+        transfer_attachments_ready "$d/transfer.manifest" "$dir" || continue
+        # Resolve even a relative sync-folder override to an absolute CLI path.
+        dir=$(cd "$dir" && pwd -P) || continue
+        if [ "$DRY_RUN" -eq 1 ]; then
+            printf 'dry run: would import transfer id=%s status=queued\n' "$id" >&2
+            continue
+        fi
+        if [ "$running" -ne 1 ]; then
+            if [ "$stopped_logged" -eq 0 ]; then
+                info "transfers queued: Hex is not running"
+                stopped_logged=1
+            fi
+            continue
+        fi
+        rc=0
+        run_cli "$d/transfer.reply" transfers import --dir "$dir" --json || rc=$?
+        if [ "$rc" -eq 3 ]; then
+            running=0
+            info "transfers queued: Hex is not running"
+            stopped_logged=1
+            continue
+        elif [ "$rc" -ne 0 ]; then
+            warn "transfer id=$id status=import-failed"
+            continue
+        fi
+        if jq -e 'type == "object" and .imported == false and .reason == "held"' "$d/transfer.reply" >/dev/null 2>&1; then
+            info "transfer id=$id status=held"
+            continue
+        fi
+        if ! jq -e 'type == "object" and (.imported == true or (.imported == false and .reason == "already"))' "$d/transfer.reply" >/dev/null 2>&1; then
+            warn "transfer id=$id status=invalid-reply"
+            continue
+        fi
+        if [ -z "$version" ]; then
+            version=$(hex_cli --version 2>/dev/null | awk 'NR == 1 { print $2 }') || version=""
+            version=${version:-unknown}
+        fi
+        # The phone may delete an item meanwhile. Never recreate its directory.
+        receipt_tmp=$(mktemp "$dir/.receipt.json.XXXXXX" 2>/dev/null) || {
+            warn "transfer id=$id status=receipt-failed"; continue;
+        }
+        if ! jq -n --arg id "$id" --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg version "$version" \
+            '{schema_version: 1, id: $id, delivered_at: $now, hex_version: $version}' >"$receipt_tmp" ||
+            ! mv -f "$receipt_tmp" "$dir/receipt.json"; then
+            rm -f "$receipt_tmp"
+            warn "transfer id=$id status=receipt-failed"
+            continue
+        fi
+        info "transfer id=$id status=delivered"
+    done
+}
+
 # ---------------------------------------------------------------- main
 
 main() {
@@ -666,6 +786,8 @@ main() {
         atomic_replace "$TMP_DIR/bundle.json" "$dest" || die 1 "cannot write $dest"
         info "bundle written: $terms terms, via $via"
     fi
+
+    import_transfers "$TMP_DIR" "$running"
 
     [ "$WARNINGS" -eq 1 ] && exit 4
     exit 0
